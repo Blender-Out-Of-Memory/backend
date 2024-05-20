@@ -22,7 +22,7 @@ Bibliothek environ verwendet. Die detektiert automatisch Dateien mit
 den genannten Namen und liest die Variablen entsprechend aus.
 """
 env = environ.Env(DEBUG=(bool, False))
-environ.Env.read_env()
+environ.Env.read_env('.env.dev')
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -82,7 +82,6 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
-    "user",
     "corsheaders",
 ]
 
@@ -94,7 +93,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "corsheaders.moddleware.CorsMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
 ]
 
 ROOT_URLCONF = "boom.urls"
