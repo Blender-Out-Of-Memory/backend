@@ -22,7 +22,7 @@ Bibliothek environ verwendet. Die detektiert automatisch Dateien mit
 den genannten Namen und liest die Variablen entsprechend aus.
 """
 env = environ.Env(DEBUG=(bool, False))
-environ.Env.read_env('.env.dev')
+environ.Env.read_env()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
