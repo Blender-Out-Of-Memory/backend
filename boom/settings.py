@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 from pathlib import Path
 import os
 import environ
+import dj_database_url
 
 """
 Hier werden aus der .env.deployment und aus der .env.environment oder
@@ -48,7 +49,8 @@ möchte, aber unsicher für die Produktion. Deshalb wird im dev environment
 DEBUG auf true gesetzt und in Prod auf False. Das wird dann aus der
 entsprechenden .env File geladen.
 """
-DEBUG = env("DEBUG")
+# DEBUG = env("DEBUG")
+DEBUG = True
 
 """
 Aus Sicherheitsgründen sollen nicht beliebige Anfragen akzeptiert
@@ -57,17 +59,21 @@ kommen. Für die Produktion ist das einfach die URL/IP des Frontend
 und für Development der Localhost. Wird entsprechend wieder im env
 definiert.
 """
-ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
+# ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
+ALLOWED_HOSTS = ['*']
 
 """
 Das ist sehr ähnlich zu den Allowed Hosts, wir sagen hier noch
 zusätzlich, dass wir in der Entwicklung alles erlauben
 """
 
+"""
 CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS')
 
 if env("DJANGO_ENV") == "development":
     CORS_ALLOW_ALL_ORIGINS = True
+"""
+CORS_ALLOW_ALL_ORIGINS = True
 
 # Application definition
 """
@@ -129,7 +135,14 @@ der aktuellen Umgebung benutzt werden soll.
 """
 if env("DJANGO_ENV") == "production":
     DATABASES = {
-        "default": env.db(),
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': 'boomdatabase',
+            'USER': 'boomuser',
+            'PASSWORD': 'password',
+            'HOST': 'db',
+            'PORT': '5432',
+        }
     }
 else:
     DATABASES = {
@@ -169,6 +182,12 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 
 USE_TZ = True
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = True
+
+CSRF_COOKIE_SECURE = True
+CSRF_TRUSTED_ORIGINS = ['https://api.boomtechnologies.de']
 
 
 # Static files (CSS, JavaScript, Images)

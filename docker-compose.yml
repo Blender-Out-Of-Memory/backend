@@ -2,37 +2,39 @@ version: '3.8'
 
 services:
   db:
-    image: postgres:12
+    image: postgres:13
     volumes:
-      - postgres_data:/var/lib/postgresql/data/
+      - postgres_data:/var/lib/postgresql/data
     environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
       POSTGRES_DB: boomdatabase
-      POSTGRES_USER: user
+      POSTGRES_USER: boomuser
       POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    networks:
+      - djangonetwork
 
   web:
     build: .
     command: gunicorn boom.wsgi:application --bind 0.0.0.0:8000
     volumes:
       - .:/app
+    ports:
+      - "8000:8000"
     depends_on:
       - db
-    env_file:
-      - .env
+    environment:
+      - DB_HOST=db
+      - DB_NAME=boomdatabase
+      - DB_USER=boomuser
+      - DB_PASS=password
+    networks:
+      - djangonetwork
 
-  nginx:
-    image: nginx:alpine
-    volumes:
-      - /var/www/boomtechnologies.de/backend/nginx.conf:/etc/nginx/nginx.conf
-      - static_volume:/app/staticfiles
-      - media_volume:/app/media
-    ports:
-      - "8080:80"
-    depends_on:
-      - web
+networks:
+    djangonetwork:
+        driver: bridge
 
 volumes:
   postgres_data:
-  static_volume:
-  media_volume:
-
