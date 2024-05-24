@@ -30,6 +30,7 @@ jobs:
       - name: Run tests
         env:
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          DJANGO_ENV: production
         run: |
           source env/bin/activate
           python manage.py test
