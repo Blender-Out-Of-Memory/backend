@@ -1,12 +1,46 @@
+import ast
+import http
 import socket
 import pickle
-
+import time
+from threading import Thread
+import http.client
 from http.server import SimpleHTTPRequestHandler, HTTPServer
+from typing import List
 
-class CustomHTTPRequestHandler(SimpleHTTPRequestHandler):
+import Worker
+import CommunicationConstants as CConsts
+
+workers: List[Worker] = []
+
+class ServerHTTPRequestHandler(SimpleHTTPRequestHandler):
     def do_GET(self):
         print("Got request for " + self.path)
-        if self.path == '/data/thefile':
+        if self.path == CConsts.WORKERMGMT:
+            headers = self.headers
+            #try:
+            #    headers = self.headers
+            #except Exception as ex: # Can try fail at all ??
+            #    print(f"Failed to read \"{CConsts.WORKERMGMT}\" request header")
+            #    print("Exception: " + str(ex))
+            #    self.send_error(500, f"Failed to read \"{CConsts.WORKERMGMT}\" request header")
+            #    return
+
+            if ("Action" in headers):
+                if (("Host" and "Port") in headers):
+                    self.send_response(200)
+                    self.end_headers() # necessary to send
+                    workers.append(Worker.Worker(headers))
+                    return
+                else:
+                    print(f"Missing or wrong arguments in \"Action\" header in \"{CConsts.WORKERMGMT}\" request")
+                    self.send_error(500, "Missing or wrong arguments")
+                    return
+            else:
+                print(f"Unknown \"{CConsts.WORKERMGMT}\" request: " + str(headers))
+                self.send_error(500, f"Unknown \"{CConsts.WORKERMGMT}\" request")
+
+        elif self.path == '/data/thefile':
             self.send_response(200)
             self.send_header('Content-type', 'application/octet-stream')
             self.send_header('Content-Disposition', 'attachment; filename="example.txt"')
@@ -18,8 +52,8 @@ class CustomHTTPRequestHandler(SimpleHTTPRequestHandler):
 
 def run_http_server(host, port):
     server_address = (host, port)
-    httpd = HTTPServer(server_address, CustomHTTPRequestHandler)
-    print(f'Server läuft an {host}:{port}')
+    httpd = HTTPServer(server_address, ServerHTTPRequestHandler)
+    print(f'HTTP server runs at {host}:{port}')
     httpd.serve_forever()
 
 def send_task(host, port):
@@ -45,7 +79,42 @@ def send_task(host, port):
         connection.close()
         server_socket.close()
 
-if __name__ == '__main__':
-    send_task('localhost', 65432)
-    run_http_server('localhost', 65432)
-    #run_http_server('0.0.0.0', 65432)
+def send_task_http(worker: Worker.Worker):
+    conn = http.client.HTTPConnection(worker.host, worker.port)
+    data = {'task-id': '0000_0000_0000_0000', 'file': '/data/thefile', 'start_frame': 0, 'end_frame': 50}
+    conn.request('GET', CConsts.STARTTASK, headers=data)
+    response = conn.getresponse()
+
+    #Check if response belongs to request??
+    if response.status == 200:
+        responseData = response.read()
+        print("Task delivered sucessfully")
+    else:
+        print(f'Task delivery failed: {response.status} {response.reason}')
+
+    conn.close()
+    #Start thread to listen to tasks
+
+    return
+
+def listen(host: str, port: int):
+    server_address = (host, port)
+    httpd = HTTPServer(server_address, ServerHTTPRequestHandler)
+    print(f'Listener runs at {host}:{port}')
+    httpd.serve_forever()
+
+def main():
+
+    listener = Thread(target=listen, args=('localhost', 65431))
+    listener.start()
+    #send_task('localhost', 65432)
+
+    #run_http_server('localhost', 65432)
+
+    time.sleep(1)
+    input("\nPress enter to send test file")
+
+    send_task_http(workers[0])
+
+
+main()
