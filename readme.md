@@ -23,5 +23,11 @@ Das sollte es eigentlich sogar gewesen sein. Habe das jetzt einfach mal runterge
 ## Testen
 
 Wir haben uns ja noch nicht für eine Testing Library entschieden (falls wir das mit dem Testn überhaupt so ernst nehmen wollen), ich glaube sowas wie pytest bietet sich an, weil Django Integration. Sollten wir irgendwann mal Tests haben, machh ```python3 manage.py test```oder bei Windows stattdessen mit ```python```. Ansonsten wird auch bei Pushes oder Pull Requests getestet. 
-Abgesehen davon bietet sich sehr doll an, einfach auszuprobieren. Also macht ```python3 manage.py runserver```, dann läuft unter ```127.0.0.1:8000```ein Testserver und an den kann man dann einfach testweise die API requests schicken und gucken, was passiert. Falls es sonst och irgendwelche offenen Punkte gibt, schreibt die oder wenn es angemessen ist, öffnet ein Issue.
+Ansonsten zum Ausprobieren einfach einen lokalen Test-Server aufsetzen. Dafür müsst jhr die folgenden Schritte befolgen.
+1. ```python3 manage.py makemigrations``` (um die Datenbankänderungen zu synchronisieren)
+2. ```python3 manage.py migrate``` (um dle Änderungen auf die lokale Datenbank anzuwenden)
+3. ```python3 manage.py collectstatic``` (höchstwahrscheinlich nicht immer nötig, aber schadet nicht)
+4. ```python3 manage.py runserver```, dann läuft unter ```127.0.0.1:8000```ein Testserver und an den kann man dann einfach testweise die API requests schicken und gucken, was passiert. 
+
+Falls es sonst och irgendwelche offenen Punkte gibt, schreibt die oder wenn es angemessen ist, öffnet ein Issue.
 
