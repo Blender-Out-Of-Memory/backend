@@ -80,10 +80,10 @@ def send_task(host, port):
         server_socket.close()
 
 def send_task_http(worker: Worker.Worker):
-    conn = http.client.HTTPConnection(worker.host, worker.port)
+    connection = http.client.HTTPConnection(worker.host, worker.port)
     data = {'task-id': '0000_0000_0000_0000', 'file': '/data/thefile', 'start_frame': 0, 'end_frame': 50}
-    conn.request('GET', CConsts.STARTTASK, headers=data)
-    response = conn.getresponse()
+    connection.request('GET', CConsts.STARTTASK, headers=data)
+    response = connection.getresponse()
 
     #Check if response belongs to request??
     if response.status == 200:
@@ -92,10 +92,22 @@ def send_task_http(worker: Worker.Worker):
     else:
         print(f'Task delivery failed: {response.status} {response.reason}')
 
-    conn.close()
+    connection.close()
     #Start thread to listen to tasks
 
     return
+
+def loop():
+    print("Entered loop")
+    stop = False
+    while not stop:
+        inp = input("Enter command> ")
+        if (inp.lower() == ("q" or "quit")):
+            stop = True
+        else:
+            print("Unknown command")
+
+        inp = ""
 
 def listen(host: str, port: int):
     server_address = (host, port)
@@ -104,7 +116,6 @@ def listen(host: str, port: int):
     httpd.serve_forever()
 
 def main():
-
     listener = Thread(target=listen, args=('localhost', 65431))
     listener.start()
     #send_task('localhost', 65432)
@@ -115,6 +126,8 @@ def main():
     input("\nPress enter to send test file")
 
     send_task_http(workers[0])
+
+    loop()
 
 
 main()
