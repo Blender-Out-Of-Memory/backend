@@ -1,0 +1,2 @@
+# --> Read Readme.md in workerClient repo <--
+In order to avoid the effort of keeping both `Readme.md` files (in `backend` and `workerClient` repos) up to date while they hold the content, only `Readme.md` in `workerClient` is currently being updated
