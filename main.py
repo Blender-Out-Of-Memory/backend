@@ -44,9 +44,9 @@ def send_task_http(worker: Worker):
     connection = http.client.HTTPConnection(worker.host, worker.port)
     data = {'task-id': '0000_0000_0000_0000', 'file': '/data/thefile', 'start_frame': 0, 'end_frame': 50}
     connection.request('GET', CConsts.STARTTASK, headers=data)
-    response = connection.getresponse() #TODO:Add timeout and retry
+    response = connection.getresponse()  # TODO:Add timeout and retry
 
-    #Check if response belongs to request??
+    # Check if response belongs to request??
     if response.status == 200:
         responseData = response.read()
         print("Task delivered sucessfully")
@@ -54,7 +54,7 @@ def send_task_http(worker: Worker):
         print(f'Task delivery failed: {response.status} {response.reason}')
 
     connection.close()
-    #Start thread to listen to tasks
+    # Start thread to listen to tasks
 
     return
 
