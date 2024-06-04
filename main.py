@@ -42,7 +42,7 @@ class ServerHTTPRequestHandler(SimpleHTTPRequestHandler):
 
 def send_task_http(worker: Worker):
     connection = http.client.HTTPConnection(worker.host, worker.port)
-    data = {'task-id': '0000_0000_0000_0000', 'file': '/data/thefile', 'start_frame': 0, 'end_frame': 50}
+    data = {'task-id': '0000_0000_0000_0000', 'file': '/data/thefile', 'start_frame': 0, 'end_frame': 52, 'frame_step': 13}
     connection.request('GET', CConsts.STARTTASK, headers=data)
     response = connection.getresponse()  # TODO:Add timeout and retry
 
@@ -69,6 +69,7 @@ def loop():
             print("Unknown command")
 
         inp = ""
+        time.sleep(0.01)  # reduce performance impact of while(True)-loop
 
 def listen(host: str, port: int):
     server_address = (host, port)
