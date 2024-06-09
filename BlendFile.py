@@ -20,9 +20,9 @@ class Header:
     @classmethod
     def read(cls, filehandle: io.BufferedIOBase):
         try:
-            identifier = filehandle.read(7).decode('ascii')
+            identifier = filehandle.read(7).decode("ascii")
 
-            pSizeChar = filehandle.read(1).decode('ascii')
+            pSizeChar = filehandle.read(1).decode("ascii")
             if (pSizeChar == '_'):
                 pointerSize = 4
             elif (pSizeChar == '-'):
@@ -30,7 +30,7 @@ class Header:
             else:
                 raise Exception(f"Invalid pointer size char: {pSizeChar}")
 
-            endianChar = filehandle.read(1).decode('ascii')
+            endianChar = filehandle.read(1).decode("ascii")
             if (endianChar == 'v'):
                 endianness = Endianness.LittleEndian
             elif (endianChar == 'V'):
@@ -38,7 +38,7 @@ class Header:
             else:
                 raise Exception(f"Invalid endianness char: {endianChar}")
 
-            version = int(filehandle.read(3).decode('ascii')) #Additional error handling ?? / Version checking ??
+            version = int(filehandle.read(3).decode("ascii")) #Additional error handling ?? / Version checking ??
             return cls(identifier, pointerSize, endianness, version)
 
         except Exception as ex:
@@ -97,7 +97,7 @@ class REND:
         try:
             startFrame = int.from_bytes(filehandle.read(4), endian.value)
             endFrame = int.from_bytes(filehandle.read(4), endian.value)
-            name = filehandle.read(length - 8).decode('utf-8').rstrip('\0')
+            name = filehandle.read(length - 8).decode("utf-8").rstrip('\0')
 
             return cls(startFrame, endFrame, name)
 
@@ -121,7 +121,7 @@ class BlendFile:
     @classmethod
     def read(cls, filepath: str):
         try:
-            with open(filepath, 'rb') as filehandle:
+            with open(filepath, "rb") as filehandle:
                 header = Header.read(filehandle)
                 if (header is None):
                     return None
