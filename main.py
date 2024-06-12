@@ -1,6 +1,7 @@
 import os
 import http
 import time
+import socket
 from threading import Thread
 import http.client
 from http.server import SimpleHTTPRequestHandler, HTTPServer
@@ -130,18 +131,38 @@ def send_task_http(worker: Worker):
     tasks.append(task1)
 
     headers = task0.to_headers()
-    connection = http.client.HTTPConnection(worker.host, worker.port)
-    connection.request("GET", CConsts.STARTTASK, headers=headers)
-    response = connection.getresponse()  # TODO: Add timeout and retry
+    MAX_RETRIES = 3
+    TIMEOUT = 5  # timeout after x (here: 5) seconds
+    retry_count = 0
+    while retry_count < MAX_RETRIES:
+        connection = None
+        try:
+            connection = http.client.HTTPConnection(worker.host, worker.port, timeout=TIMEOUT)
+            connection.request("GET", CConsts.STARTTASK, headers=headers)
+            response = connection.getresponse()
 
-    # Check if response belongs to request??
-    if response.status == 200:
-        responseData = response.read()
-        print("Task delivered successfully")
-    else:
-        print(f"Task delivery failed: {response.status} {response.reason}")
-
-    connection.close()
+            # Check if response belongs to request??
+            if response.status == 200:
+                responseData = response.read()
+                print("Task delivered successfully")
+            else:
+                print(f"Task delivery failed: {response.status} {response.reason}")
+        except socket.timeout as e:   # did response timeout?
+            retry_count += 1
+            print(f"Socket timeout, retrying {retry_count}/{MAX_RETRIES}...")
+            if retry_count >= MAX_RETRIES:
+                print("Max retries reached, unable to get response.")
+        except http.client.HTTPException as e:
+            print("HTTP exception:", e)
+            break
+        except Exception as e:
+            print("Other exception:", e)
+            break
+        finally:
+            # Close the connection if it was opened
+            if connection is not None:
+                connection.close()
+                
     # Start thread to listen to tasks
 
     return
