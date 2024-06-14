@@ -1,8 +1,8 @@
-#from __future__ import annotations  # to reference SDNA before declaration in circular references
+from __future__ import annotations  # to reference SDNA before declaration in circular references
 
 import io
 from enum import Enum
-from typing import List, Callable, BinaryIO
+from typing import List, BinaryIO, Optional, Literal
 
 from RenderTask import RenderOutputType
 
@@ -10,6 +10,10 @@ from RenderTask import RenderOutputType
 class Endianness(Enum):
     LittleEndian = "little"
     BigEndian = "big"
+
+    def as_literal(self) -> Literal["little", "big"]:
+        return self.value
+
 
 class Scene:
     Name: int
@@ -80,15 +84,15 @@ class BHead:
         try:
             code = bytestream.read(4).decode("utf-8")
 
-            length = int.from_bytes(bytestream.read(4), endian.value)
+            length = int.from_bytes(bytestream.read(4), endian.as_literal())
             if (length < 0):
                 raise Exception(f"Invalid BHead length: {length}")
 
             bytestream.seek(pointersize, io.SEEK_CUR) # skip oldPtr
 
-            sdnanr = int.from_bytes(bytestream.read(4), endian.value)
+            sdnanr = int.from_bytes(bytestream.read(4), endian.as_literal())
 
-            bytestream.seek(pointersize + 4 + 4, io.SEEK_CUR) # skip nr
+            bytestream.seek(4, io.SEEK_CUR) # skip nr
 
             pos = bytestream.tell()
             return cls(code, length, sdnanr, pos)
@@ -116,8 +120,8 @@ class REND:
             return None
 
         try:
-            startFrame = int.from_bytes(bytestream.read(4), endian.value)
-            endFrame = int.from_bytes(bytestream.read(4), endian.value)
+            startFrame = int.from_bytes(bytestream.read(4), endian.as_literal())
+            endFrame = int.from_bytes(bytestream.read(4), endian.as_literal())
             name = bytestream.read(length - 8).decode("utf-8").rstrip('\0')
 
             return cls(startFrame, endFrame, name)
@@ -145,24 +149,25 @@ class Field:
     @classmethod
     def read(cls, bytestream: BinaryIO, endian: Endianness, sdna, pointersize: int):
         try:
-            fieldType = int.from_bytes(bytestream.read(2), endian.value)
-            if (fieldType <= sdna.Types.Count):
+            fieldType = int.from_bytes(bytestream.read(2), endian.as_literal())
+            if (fieldType >= sdna.Types.Count):
                 print(f"Field type index out of bounds: {fieldType}")
                 return None
 
-            fieldName = int.from_bytes(bytestream.read(2), endian.value)
-            if (fieldType <= sdna.Types.Count):
+            fieldName = int.from_bytes(bytestream.read(2), endian.as_literal())
+            if (fieldType >= sdna.Types.Count):
                 print(f"Field name index out of bounds: {fieldName}")
                 return None
 
-            fieldNameStr: str = sdna.Types[fieldName]
+            fieldNameStr: str = sdna.Names.Array[fieldName]
+
 
             if ("*" in fieldNameStr):
                 fieldSize = pointersize
             else:
                 fieldSize = sdna.TypeSizes.Array[fieldType]
                 if ("[" in fieldNameStr):
-                    size = int(fieldNameStr[fieldNameStr.index("[") + 1 : fieldNameStr.index("]") - 1])
+                    size = int(fieldNameStr[fieldNameStr.index("[") + 1 : fieldNameStr.index("]")])
                     fieldSize *= size
 
             return cls(sdna.Types.Array[fieldType], fieldNameStr, fieldSize)
@@ -192,12 +197,12 @@ class Structure:
     @classmethod
     def read(cls, bytestream: BinaryIO, endian: Endianness, sdna, pointersize: int):
         try:
-            type = int.from_bytes(bytestream.read(2), endian.value)
-            if (type <= sdna.Types.Count):
+            type = int.from_bytes(bytestream.read(2), endian.as_literal())
+            if (type >= sdna.Types.Count):
                 print(f"Structure type index out of bounds: {type}")
                 return None
 
-            fieldCount = int.from_bytes(bytestream.read(2), endian.value)
+            fieldCount = int.from_bytes(bytestream.read(2), endian.as_literal())
             fields = []
             for i in range(fieldCount):
                 fields.append(Field.read(bytestream, endian, sdna, pointersize))
@@ -213,76 +218,112 @@ class Structure:
         self.FieldCount = fieldCount
         self.Fields = fields
 
+
 class SDNAList:
     Identifier: str
     Count: int
     Array: list
 
     @classmethod
-    def read(cls, bytestream: BinaryIO, endian: Endianness, arrayReadFunc: Callable, count: int = -1):
+    def read(cls, bytestream: BinaryIO):
         try:
             identifier = bytestream.read(4).decode("utf-8")
-            count = count if count != -1 else int.from_bytes(bytestream.read(4), endian.value)
-
-            array = []
-            for i in range(count):
-                try:
-                    array.append(arrayReadFunc(bytestream, endian))
-                except Exception as ex:
-                    pass
-
-            return cls(identifier, count, array)
+            return cls(identifier)
 
         except Exception as ex:
-            print("An error occurred while reading a SDNAList from file")
+            print("An error occurred while reading a SDNAList Identifier from file")
             print(ex)
 
-    def __init__(self, identifier: str, count: int, array: list):
+    def __init__(self, identifier: str):
         self.Identifier = identifier
-        self.Count = count
-        self.Array = array
+        self.Array = []
 
 
-def read_null_terminated_str(bytestream: BinaryIO, *args) -> str:
-    bts: bytes = bytes()
-    char = bytestream.read(1)
-    while char != b'\x00':
-        bts += char
-        char = bytestream.read(1)
+class StrSDNAList(SDNAList):
+    Array: List[str]
 
-    return bts.decode('utf-8')
+    @classmethod
+    def read(cls, bytestream: BinaryIO, endian: Endianness):
+        base = super().read(bytestream)
+        base.Count = int.from_bytes(bytestream.read(4), endian.as_literal())
+        for i in range(base.Count):
+            try:
+                bts: bytes = bytes()
+                char = bytestream.read(1)
+                while char != b'\x00':
+                    bts += char
+                    char = bytestream.read(1)
 
-def read_ushort(bytestream: BinaryIO, endian: Endianness) -> int:
-    return int.from_bytes(bytestream.read(2), endian.value)
+                base.Array.append(bts.decode('utf-8'))
+            except Exception as ex:
+                print(f"Failed to read array of SDNAList {base.Identifier}")
+                return None
+
+        return base
+
+class UShortSDNAList(SDNAList):
+    Array: List[int]
+
+    @classmethod
+    def read(cls, bytestream: BinaryIO, endian: Endianness, count: int):
+        base = super().read(bytestream)
+        base.Count = count
+        for i in range(base.Count):
+            try:
+                ushort = int.from_bytes(bytestream.read(2), endian.as_literal())
+                base.Array.append(ushort)
+            except Exception as ex:
+                print(f"Failed to read UShortSDNAList {base.Identifier}")
+                return None
+
+        return base
+
+class StructureSDNAList(SDNAList):
+    Array: List[Structure]
+
+    @classmethod
+    def read(cls, bytestream: BinaryIO, endian: Endianness, sdna: SDNA, pointersize: int):
+        base = super().read(bytestream)
+        base.Count = int.from_bytes(bytestream.read(4), endian.as_literal())
+        for i in range(base.Count):
+            try:
+                struct = Structure.read(bytestream, endian, sdna, pointersize)
+                base.Array.append(struct)
+            except Exception as ex:
+                print(f"Failed to read StructureSDNAList {base.Identifier}")
+                return None
+            
+        return base
 
 class SDNA:
     Identifier: str
-    Names: SDNAList
-    Types: SDNAList
-    TypeSizes: SDNAList
-    Structures: SDNAList
+    Names: StrSDNAList
+    Types: StrSDNAList
+    TypeSizes: UShortSDNAList
+    Structures: StructureSDNAList
 
     def read_struct(self, bytestream: BinaryIO, sdnaNr: int, endian: Endianness) -> dict:
-        return self.Structures.Array[sdnaNr].read_instance(bytestream, endian)
+        return self.Structures.Array[sdnaNr].read_instance(bytestream)
 
-    def read_struct_from_name(self, bytestream: BinaryIO, structName: str, endian: Endianness) -> dict:
+    def read_struct_from_name(self, bytestream: BinaryIO, structName: str, endian: Endianness) -> Optional[dict]:
         struct = next(filter(lambda x: x.Type == structName, self.Structures.Array), None)
         if struct is None:
             print(f"Failed to find struct {structName}")
             return None
 
-        return struct.read_instance(bytestream, endian)
+        return struct.read_instance(bytestream)
 
     def read_struct_from_bhead(self, bytestream: BinaryIO, bhead: BHead, endian: Endianness) -> dict:
         bytestream.seek(bhead.ContentPos)
         return self.read_struct(bytestream, bhead.SDNAnr, endian)
+
     def __align_to_4__(bytestream: BinaryIO):
         offset = bytestream.tell() % 4
         if offset != 0:
             bytestream.seek(4 - offset, io.SEEK_CUR)
 
     @classmethod
-    def read(cls, bytestream: BinaryIO, endian: Endianness):
+    def read(cls, bytestream: BinaryIO, endian: Endianness, pointersize: int):
         try:
             identifier = bytestream.read(4).decode("utf-8")
             if (identifier != "SDNA"):
@@ -291,39 +332,42 @@ class SDNA:
 
             # Read null terminated string
 
-            names = SDNAList.read(bytestream, endian, read_null_terminated_str)
+            names = StrSDNAList.read(bytestream, endian)
             if (names is None):
                 return None
 
             SDNA.__align_to_4__(bytestream)
-            types = SDNAList.read(bytestream, endian, read_null_terminated_str)
+            types = StrSDNAList.read(bytestream, endian)
             if (types is None):
                 print(f"Can't proceed to SDNAList TypeSizes as SDNAList Types is None")
                 return None
 
             SDNA.__align_to_4__(bytestream)
-            typeSizes = SDNAList.read(bytestream, endian, read_ushort, types.Count)
+            typeSizes = UShortSDNAList.read(bytestream, endian, types.Count)
             if (typeSizes is None):
                 return None
 
+            sdna = cls(identifier, names, types, typeSizes)
+
             SDNA.__align_to_4__(bytestream)
-            structures = SDNAList.read(bytestream, endian, Structure.read)
+            structures = StructureSDNAList.read(bytestream, endian, sdna, pointersize)
             if (structures is None):
                 return None
 
-            return cls(identifier, names, types, typeSizes, structures)
+            sdna.Structures = structures
+
+            return sdna
 
         except Exception as ex:
             print("Error while reading a SDNA from file")
             print(ex)
             return None
 
-    def __init__(self, identifier: str, names: SDNAList, types: SDNAList, typeSizes: SDNAList, structures: SDNAList):
+    def __init__(self, identifier: str, names: StrSDNAList, types: StrSDNAList, typeSizes: UShortSDNAList):
         self.Identifier = identifier
         self.Names = names
         self.Types = types
         self.TypeSizes = typeSizes
-        self.Structures = structures
 
 
 class BlendFile:
@@ -333,6 +377,10 @@ class BlendFile:
     #Scenes: List[Scene]
     CurrentScene: Scene
     SDNA: SDNA
+
+    def get_current_scene(filepath: str):
+        instance = BlendFile.read(filepath)
+        return instance.CurrentScene
 
     @classmethod
     def read(cls, filepath: str):
@@ -358,7 +406,7 @@ class BlendFile:
                             return None
 
                     elif (bhead.Code == "DNA1"):
-                        sdna = SDNA.read(filehandle, header.Endianness)
+                        sdna = SDNA.read(filehandle, header.Endianness, header.PointerSize)
                         if (sdna is None):
                             return None
 
@@ -381,12 +429,13 @@ class BlendFile:
                     if (id is None):
                         print("Failed to read ID")
                         continue
-                    if ("name" not in scene):
+                    if ("name[66]" not in id):
                         print("Name attribute missing in ID")
                         continue
 
-                    name = id["name"]["Value"].decode("utf-8").rstrip("\x00")
-                    if (name != REND.SceneName):
+                    name: str = id["name[66]"]["Value"].decode("utf-8")
+                    name = name[2:name.index('\0')]
+                    if (name != rend.SceneName):
                         continue
 
                     if not ("r" in scene):
@@ -404,9 +453,9 @@ class BlendFile:
                         print("ImageFormatData attribute \"im_fomrat\" missing in RenderData")
                         continue
 
-                    sfra = int.from_bytes(renderData["sfra"]["Value"], header.Endianness)
-                    efra = int.from_bytes(renderData["efra"]["Value"], header.Endianness)
-                    frame_step = int.from_bytes(renderData["frame_step"]["Value"], header.Endianness)
+                    sfra = int.from_bytes(renderData["sfra"]["Value"], header.Endianness.as_literal())
+                    efra = int.from_bytes(renderData["efra"]["Value"], header.Endianness.as_literal())
+                    frame_step = int.from_bytes(renderData["frame_step"]["Value"], header.Endianness.as_literal())
 
                     im_format = sdna.read_struct_from_name(io.BytesIO(renderData["im_format"]["Value"]), renderData["im_format"]["FieldType"], header.Endianness)
                     if (im_format is None):
@@ -416,12 +465,12 @@ class BlendFile:
                         print("Required information missing in ImageFormat")
                         continue
 
-                    imtype = int.from_bytes(im_format["imtype"]["Value"], header.Endianness)
+                    imtype = int.from_bytes(im_format["imtype"]["Value"], header.Endianness.as_literal())
                     if not any(element.value == imtype for element in RenderOutputType):
                         print("Unknown output type")
                         continue
 
-                    currentScene = Scene(name, sfra, efra, frame_step, RenderOutputType(im_format))
+                    currentScene = Scene(name, sfra, efra, frame_step, RenderOutputType(imtype))
                     #scenes.append(currentScene)
                 if (currentScene is None):
                     print("No scene with the name specified in REND was found")
@@ -439,7 +488,3 @@ class BlendFile:
         #self.Scenes = scenes
         self.CurrentScene = current_scene
         self.SDNA = sdna
-
-
-a = BlendFile.read("/Users/tobiaskuffert/Projects/1HPI/VS/Backend/Server/tasks/0000_0000_0000_0000/blenderfiles/blenderdata.blend")
-#a = BlendFile.read("C:\\Users\\Tobi\\Documents\\1Studium\\VS\\Backend\\Server\\tasks\\0000_0000_0000_0000\\blenderfiles\\blenderdata.blend")
