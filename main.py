@@ -134,7 +134,8 @@ def send_task_http(worker: Worker):
     MAX_RETRIES = 3
     TIMEOUT = 5  # timeout after x (here: 5) seconds
     retry_count = 0
-    while retry_count < MAX_RETRIES:
+    success = False
+    while retry_count < MAX_RETRIES and success is False:
         connection = None
         try:
             connection = http.client.HTTPConnection(worker.host, worker.port, timeout=TIMEOUT)
@@ -147,6 +148,7 @@ def send_task_http(worker: Worker):
                 print("Task delivered successfully")
             else:
                 print(f"Task delivery failed: {response.status} {response.reason}")
+            success = True
         except socket.timeout as e:   # did response timeout?
             retry_count += 1
             print(f"Socket timeout, retrying {retry_count}/{MAX_RETRIES}...")
@@ -154,15 +156,19 @@ def send_task_http(worker: Worker):
                 print("Max retries reached, unable to get response.")
         except http.client.HTTPException as e:
             print("HTTP exception:", e)
+            if connection is not None:
+                connection.close()
             break
         except Exception as e:
             print("Other exception:", e)
+            if connection is not None:
+                connection.close()      # bloated code but functionally nice
             break
         finally:
             # Close the connection if it was opened
             if connection is not None:
                 connection.close()
-                
+
     # Start thread to listen to tasks
 
     return
