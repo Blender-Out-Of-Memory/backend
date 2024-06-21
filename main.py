@@ -108,29 +108,8 @@ def is_int(string: str) -> bool:
     except:
         return False
 
-def send_task_http(worker: Worker):
-    global tasks
-    task0 = RenderTask("0000_0000_0000_0000",
-                       "localhost",
-                       65431,
-                       BlenderDataType.SingleFile,
-                       RenderOutputType.PNG,
-                       0,
-                       52,
-                       13)
-    tasks.append(task0)
-
-    task1 = RenderTask("0000_0000_0000_0001",
-                       "localhost",
-                       65431,
-                       BlenderDataType.SingleFile,
-                       RenderOutputType.FFMPEG,
-                       0,
-                       52,
-                       13)
-    tasks.append(task1)
-
-    headers = task0.to_headers()
+def send_task_http(worker: Worker, task: RenderTask):
+    headers = task.to_headers()
     MAX_RETRIES = 3
     TIMEOUT = 5  # timeout after x (here: 5) seconds
     retry_count = 0
@@ -199,7 +178,27 @@ def main():
     time.sleep(1)
     input("\nPress enter to send test file")
 
-    send_task_http(workers[0])
+    global tasks
+    task0 = RenderTask("0000_0000_0000_0000",
+                       "localhost",
+                       65431,
+                       BlenderDataType.SingleFile,
+                       RenderOutputType.PNG,
+                       0,
+                       52,
+                       13)
+    tasks.append(task0)
+
+    task1 = RenderTask("0000_0000_0000_0001",
+                       "localhost",
+                       65431,
+                       BlenderDataType.SingleFile,
+                       RenderOutputType.FFMPEG,
+                       0,
+                       52,
+                       13)
+    tasks.append(task1)
+    send_task_http(workers[0], tasks[0])
 
     loop()
 
