@@ -25,6 +25,7 @@ The `BlendFile` class is responsible for parsing and extracting information from
 ```python
 blend_file = BlendFile.read(filepath)
 current_scene = blend_file.CurrentScene
+```
 
 ### 2. RenderTask
 
