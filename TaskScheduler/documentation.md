@@ -47,6 +47,7 @@ current_scene = blend_file.CurrentScene
 #### Usage:
 ```python
 task = RenderTask.create(task_id, file_server_address, file_server_port, data_type)
+```
 
 ### 3. TaskScheduler
 
@@ -65,6 +66,7 @@ task = RenderTask.create(task_id, file_server_address, file_server_port, data_ty
 ```python
 file_path, task_id = TaskScheduler.init_new_task()
 TaskScheduler.run_task(task_id, progress_callback, finished_callback)
+```
 
 ## Enums
 
