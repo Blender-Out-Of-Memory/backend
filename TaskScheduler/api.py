@@ -23,13 +23,10 @@ class RenderTaskViewSet(viewsets.ModelViewSet):
         if not task_id:
             return Response({'error': 'task_id is required'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # You'll need to implement these callback functions
         def progress_callback(progress):
-            # Implement progress tracking logic here
             pass
 
         def finished_callback(result):
-            # Implement task completion logic here
             pass
 
         success = TaskScheduler.run_task(task_id, progress_callback, finished_callback)
