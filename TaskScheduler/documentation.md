@@ -118,11 +118,11 @@ This ViewSet handles API requests related to RenderTasks.
 
    Example usage:
    ```python
-   response = requests.post('/api/render-tasks/init_new_task/')
+   response = requests.post('/api/taskscheduler/render-tasks/init_new_task/')
    if response.status_code == 200:
        file_path, task_id = response.json()['file_path'], response.json()['task_id']
     ```
-2. **Run Task**
+3. **Run Task**
    - URL: `/api/render-tasks/run_task/`
    - Method: POST
    - Description: Starts the execution of a rendering task
@@ -133,7 +133,7 @@ This ViewSet handles API requests related to RenderTasks.
 
    Example usage:
    ```python
-   response = requests.post('/api/render-tasks/run_task/', json={'task_id': 'task_123'})
+   response = requests.post('/api/taskscheduler/render-tasks/run_task/', json={'task_id': 'task_123'})
    if response.status_code == 200:
        print("Task started successfully")
     ```

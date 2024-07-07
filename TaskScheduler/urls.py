@@ -6,5 +6,5 @@ router = DefaultRouter()
 router.register(r'render-tasks', RenderTaskViewSet)
 
 urlpatterns = [
-    path('api/', include(router.urls)),
+    path('taskscheduler/', include(router.urls)),
 ]
