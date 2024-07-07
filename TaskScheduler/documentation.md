@@ -98,3 +98,71 @@ Specifies if the Blender data is a single file or multiple files:
 
 The system will handle the task execution, calling the provided callbacks for progress updates and task completion.
 
+## API
+
+The TaskScheduler system provides a REST API for interacting with rendering tasks.
+
+### RenderTaskViewSet
+
+This ViewSet handles API requests related to RenderTasks.
+
+#### Endpoints:
+
+1. **Initialize New Task**
+   - URL: `/api/render-tasks/init_new_task/`
+   - Method: POST
+   - Description: Initializes a new rendering task
+   - Response:
+     - Success: Returns file path and task ID
+     - Failure: Returns an error message
+
+   Example usage:
+   ```python
+   response = requests.post('/api/render-tasks/init_new_task/')
+   if response.status_code == 200:
+       file_path, task_id = response.json()['file_path'], response.json()['task_id']
+    ```
+2. **Run Task**
+   - URL: `/api/render-tasks/run_task/`
+   - Method: POST
+   - Description: Starts the execution of a rendering task
+   - Request Body: JSON object with `task_id`
+   - Response:
+     - Success: Confirmation message
+     - Failure: Error message
+
+   Example usage:
+   ```python
+   response = requests.post('/api/render-tasks/run_task/', json={'task_id': 'task_123'})
+   if response.status_code == 200:
+       print("Task started successfully")
+    ```
+### Serializers
+
+#### RenderTaskSerializer
+
+This serializer is used to convert RenderTask model instances to JSON representations and vice versa.
+
+Fields:
+- All fields from the RenderTask model
+
+## URL Configuration
+
+The `urls.py` file sets up the URL routing for the TaskScheduler API:
+
+- API root: `/api/`
+- RenderTask endpoints: `/api/render-tasks/`
+
+## Testing
+
+The `tests.py` file is prepared for writing unit tests for the TaskScheduler system. It's currently empty and ready for test implementations.
+
+## Django Integration
+
+The TaskScheduler is set up as a Django app:
+
+- `apps.py`: Defines the TaskSchedulerConfig
+- `admin.py`: Can be used to register models with the Django admin interface (currently empty)
+
+These components integrate the TaskScheduler into the broader Django project structure, allowing for easy management and scalability.
+
