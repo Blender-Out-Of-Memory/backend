@@ -2,7 +2,7 @@ import os
 from queue import Queue
 from typing import Callable, Optional, List, Tuple
 
-from .RenderTask import RenderTask, BlenderDataType
+from .models import RenderTask, BlenderDataType
 
 def _int_to_task_id(value: int) -> str:
     hex_string = format(value, 'x')
