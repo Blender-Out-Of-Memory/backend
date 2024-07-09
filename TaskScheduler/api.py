@@ -20,7 +20,9 @@ class RenderTaskViewSet(viewsets.ModelViewSet):
         with open(file_path, 'wb') as file:
             file.write(request.body)
 
+        print("bef run task")
         success = TaskScheduler.run_task(task_id)
+        print("After run task")
         if success:
             return Response({'message': 'Task started successfully'})
         return Response({'error': 'Failed to start task'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

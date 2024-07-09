@@ -27,7 +27,7 @@ class TaskScheduler:
                 task_folder = f"tasks/{task_id}"
                 os.makedirs(task_folder, exist_ok=False)
                 TaskScheduler.uploadingTasks.append(task_id)
-                return (f"{task_folder}/blendfile.blend", task_id)
+                return (f"{task_folder}/blenderdata.blend", task_id)
 
             except FileExistsError:
                 print("ERROR: Tried to create existing folder for new task. Generating new task id")
@@ -48,5 +48,7 @@ class TaskScheduler:
         blenderDataType = BlenderDataType.SingleFile
 
         task = RenderTask.create(task_id, fileServerAddress, fileServerPort, blenderDataType)
+
+        return True
 
     # in Frontend: finished_callback(render_result_path: str)
