@@ -92,8 +92,8 @@ class RenderTask(models.Model):
             "Task-ID": self.TaskID,
             "File-Server-Address": self.FileServerAddress,
             "File-Server-Port": self.FileServerPort,
-            "Blender-Data-Type": self.OutputType.value,
-            "Output-Type": self.outputType.value,
+            "Blender-Data-Type": self.DataType.value,
+            "Output-Type": self.OutputType.value,
             "Start-Frame": self.StartFrame,
             "End-Frame": self.EndFrame,
             "Frame-Step": self.FrameStep,
@@ -120,9 +120,9 @@ class RenderTask(models.Model):
         instance.outputType = RenderOutputType(
             0
         ).value  # blendFile.CurrentScene.outputType
-        instance.StartFrame = 0  #  blendFile.CurrentScene.StartFrame
-        instance.EndFrame = 0  # blendFile.CurrentScene.EndFrame
-        instance.FrameStep = 0  # blendFile.CurrentScene.FrameStep
+        instance.StartFrame = 0  # blendFile.CurrentScene.StartFrame
+        instance.EndFrame   = 0  # blendFile.CurrentScene.EndFrame
+        instance.FrameStep  = 0  # blendFile.CurrentScene.FrameStep
 
         return instance
 

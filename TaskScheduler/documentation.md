@@ -12,19 +12,15 @@ The `BlendFile` class is responsible for parsing and extracting information from
 
 #### Key Features:
 - Reads and parses the complex structure of Blender files.
-- Extracts scene information, render settings, and other relevant data.
-- Handles different Blender file versions and structures.
+- Extracts all relevant information (and more) for rendering
 
 #### Main Classes:
-- **Header**: Represents the file header.
-- **BHead**: Represents block headers within the file.
-- **SDNA**: Handles the Structure DNA of the Blender file.
+- **Header**: Represents the file header: Only relevant information: File version
 - **Scene**: Represents a Blender scene with render settings.
 
 #### Usage:
 ```python
-blend_file = BlendFile.read(filepath)
-current_scene = blend_file.CurrentScene
+current_scene = BlendFile.get_current_scene(filepath)
 ```
 
 ### 2. RenderTask
@@ -67,7 +63,6 @@ task = RenderTask.create(task_id, file_server_address, file_server_port, data_ty
 file_path, task_id = TaskScheduler.init_new_task()
 TaskScheduler.run_task(task_id, progress_callback, finished_callback)
 ```
-
 ## Enums
 
 ### RenderOutputType

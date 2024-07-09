@@ -35,7 +35,7 @@ class TaskScheduler:
         return None
 
     @staticmethod
-    def run_task(task_id: str, progress_callback: Callable, finished_callback: Callable) -> bool:  # call after upload
+    def run_task(task_id: str) -> bool:  # call after upload
         if (task_id not in TaskScheduler.uploadingTasks):
             print(f"ERROR: Run task was called on unknown task_id: {task_id}")
             return False
