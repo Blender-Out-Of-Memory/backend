@@ -15,10 +15,11 @@ The `BlendFile` class is responsible for parsing and extracting information from
 - Extracts all relevant information (and more) for rendering
 
 #### Main Classes:
-- **Header**: Represents the file header: Only relevant information: File version
+- **Header**: Represents the file header: Only (maybe) relevant information: File version
 - **Scene**: Represents a Blender scene with render settings.
 
 #### Usage:
+Only relevant method for simplification:
 ```python
 current_scene = BlendFile.get_current_scene(filepath)
 ```
@@ -28,17 +29,19 @@ current_scene = BlendFile.get_current_scene(filepath)
 `RenderTask` is a Django model that represents a single rendering task.
 
 #### Fields:
-- **TaskID**: Unique identifier for the task.
-- **FileServerAddress**: URL of the file server.
-- **FileServerPort**: Port of the file server.
-- **dataType**: Type of Blender data (single file or multi-file).
-- **outputType**: Render output format.
-- **StartFrame**, **EndFrame**, **FrameStep**: Frame range information.
+- **TaskID**: Unique identifier for the task
+- **FileServerAddress**: URL of the file server
+- **FileServerPort**: Port of the file server
+- **dataType**: Type of Blender data (single file or multi-file), database field
+- **DataType**: Counterpart for previous field for use in Python
+- **outputType**: Render output format
+- **OutputType**: Counterpart for previous field for use in Python
+- **StartFrame**, **EndFrame**, **FrameStep**: Frame range information
 
 #### Methods:
-- **get_folder()**: Returns the task's folder path.
-- **get_filename()**: Returns the Blender file name.
-- **to_headers()**: Converts task information to HTTP headers.
+- **get_folder()**: Returns the task's folder path
+- **get_filename()**: Returns the Blender file name
+- **to_headers()**: Converts task information to HTTP headers
 
 #### Usage:
 ```python
@@ -47,21 +50,25 @@ task = RenderTask.create(task_id, file_server_address, file_server_port, data_ty
 
 ### 3. TaskScheduler
 
-`TaskScheduler` is a static class that manages the queue of rendering tasks.
+`TaskScheduler` is a static class that manages the queue of rendering tasks
 
 #### Key Features:
-- Initializes new tasks.
-- Manages task queues (normal and high priority).
-- Handles task execution.
+- Initialize new task
+- Run task
+- Manage task processing
+  - Splitting into subtasks for available workers
+  - Redistribution in case of issue
+  - Merging with FFmpeg
 
 #### Methods:
-- **init_new_task()**: Prepares a new task and returns file path and task ID.
-- **run_task(task_id, progress_callback, finished_callback)**: Starts task execution.
+- **init_new_task()**: Prepares a new task and returns file path (to safe uploaded file to) and task ID
+- **run_task(task_id)**: Starts task execution
 
 #### Usage:
 ```python
 file_path, task_id = TaskScheduler.init_new_task()
-TaskScheduler.run_task(task_id, progress_callback, finished_callback)
+# upload file to file_path
+TaskScheduler.run_task(task_id)
 ```
 ## Enums
 
@@ -77,24 +84,26 @@ Defines the various output formats for rendered images/videos. Examples include:
 ### BlenderDataType
 
 Specifies if the Blender data is a single file or multiple files:
-- SingleFile
-- MultiFile
+- SingleFile (.blend)
+- MultiFile (placeholder for later implementation) (.zip, containing one or multiple .blend files & other resources if not included in .blend files)
 
 ## Workflow
 
-1. **Initialize a new task:**
-    ```python
-    file_path, task_id = TaskScheduler.init_new_task()
+1. **Upload the file by calling POST with file as body on URL:**
     ```
-
-2. **Upload the Blender file to the provided file_path.**
-
-3. **Start the rendering task:**
-    ```python
-    TaskScheduler.run_task(task_id, progress_callback, finished_callback)
+    /api/taskscheduler/render-tasks/run_task/
+   ```
+   Response: Key to reference the task in later requests
+   <br><br>
+2. **Poll progress report by calling GET with key as argument on URL:**
+   ```
+   [TO BE DONE]
     ```
+3. **Download render results if progress polling reports finished by calling GET with key as argument on URL:**
+    ```
+   [TO BE DONE]
+   ```
 
-The system will handle the task execution, calling the provided callbacks for progress updates and task completion.
 
 ## API
 
@@ -106,35 +115,33 @@ This ViewSet handles API requests related to RenderTasks.
 
 #### Endpoints:
 
-1. **Initialize New Task**
-   - URL: `/api/render-tasks/init_new_task/`
-   - Method: POST
-   - Description: Initializes a new rendering task
-   - Response:
-     - Success: Returns file path and task ID
-     - Failure: Returns an error message
-
-   Example usage:
-   ```python
-   response = requests.post('/api/taskscheduler/render-tasks/init_new_task/')
-   if response.status_code == 200:
-       file_path, task_id = response.json()['file_path'], response.json()['task_id']
-    ```
-3. **Run Task**
+1. **Upload the file**
    - URL: `/api/render-tasks/run_task/`
    - Method: POST
-   - Description: Starts the execution of a rendering task
-   - Request Body: JSON object with `task_id`
+   - Description: Upload file for a rendering task
+   - Request Body: Data to be rendered (only single .blend file at the moment)
    - Response:
-     - Success: Confirmation message
+     - Success: Returns key ("`TaskKey`") referencing the task created (TaskID at the moment)
+     - Failure: Returns an error message
+
+2. **Poll progress report** [TO BE DONE]
+   - URL: `/api/render-tasks/[TO BE DONE]/[TaskKey]`
+   - Method: GET
+   - Description: Requests the progress for task of `TaskKey`
+   - Response:
+     - Success: Progress
      - Failure: Error message
 
-   Example usage:
-   ```python
-   response = requests.post('/api/taskscheduler/render-tasks/run_task/', json={'task_id': 'task_123'})
-   if response.status_code == 200:
-       print("Task started successfully")
-    ```
+If progress reports finished
+
+3. **Download the file** [TO BE DONE]
+   - URL: `/api/render-tasks/[TO BE DONE]/[TaskKey]`
+   - Method: GET
+   - Description: Requests download of the render result of `TaskKey`
+   - Response:
+     - Success: Octet-Stream (standard browser file download) transmitting render result
+     - Failure: Error message
+
 ### Serializers
 
 #### RenderTaskSerializer
@@ -154,6 +161,8 @@ The `urls.py` file sets up the URL routing for the TaskScheduler API:
 ## Testing
 
 The `tests.py` file is prepared for writing unit tests for the TaskScheduler system. It's currently empty and ready for test implementations.
+
+`../testing/uploadfile.py` is a script for emulating a client uploading a .blend file
 
 ## Django Integration
 

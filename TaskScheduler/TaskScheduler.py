@@ -49,6 +49,6 @@ class TaskScheduler:
 
         task = RenderTask.create(task_id, fileServerAddress, fileServerPort, blenderDataType)
 
-        return True
+        return task is not None
 
     # in Frontend: finished_callback(render_result_path: str)

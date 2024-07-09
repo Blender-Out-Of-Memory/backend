@@ -375,9 +375,10 @@ class BlendFile:
     CurrentScene: Scene
     SDNA: SDNA
 
-    def get_current_scene(filepath: str):
+    @staticmethod
+    def get_current_scene(filepath: str) -> Optional[Scene]:
         instance = BlendFile.read(filepath)
-        return instance.CurrentScene
+        return None if (instance is None) else instance.CurrentScene
 
     @classmethod
     def read(cls, filepath: str):

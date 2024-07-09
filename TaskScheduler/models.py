@@ -32,7 +32,7 @@ class RenderTask(models.Model):
 
     def get_filename(self) -> str:
         if self.DataType == BlenderDataType.SingleFile:
-            return "example.blend"
+            return "blenderdata.blend"
         else:
             return "blenderdata.zip"
 
@@ -62,9 +62,9 @@ class RenderTask(models.Model):
             FileServerPort=fileServerPort,
             dataType=dataType.value,
         )
-        blendFile = BlendFile.read(f"{instance.get_folder()}/{instance.get_filename()}")
-        # if (blendFile is None):
-        #   return None
+        scene = BlendFile.get_current_scene(f"{instance.get_folder()}/{instance.get_filename()}")
+        if (scene is None):
+            return None
 
         instance.outputType = RenderOutputType(
             0
