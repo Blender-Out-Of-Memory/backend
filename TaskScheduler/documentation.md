@@ -37,16 +37,18 @@ current_scene = BlendFile.get_current_scene(filepath)
 - **outputType**: Render output format
 - **OutputType**: Counterpart for previous field for use in Python
 - **StartFrame**, **EndFrame**, **FrameStep**: Frame range information
+- **stage**: Stage of this render task
+- **Stage**: Counterpart for previous field for use in Python
 
 #### Methods:
-- **get_folder()**: Returns the task's folder path
-- **get_filename()**: Returns the Blender file name
-- **to_headers()**: Converts task information to HTTP headers
-
-#### Usage:
-```python
-task = RenderTask.create(task_id, file_server_address, file_server_port, data_type)
-```
+- **progress_simple()**
+  - Description: Get summary of progress
+  - Return value: Tuple (Stage of RenderTask, Current Stage Progress, Total Progress)
+  - Hint: Current Stage Progress is -\infty if doesn't makes sense in current stage
+- **progress_detailed()**
+  - Description: Get progress by Worker
+  - Return value: List of tuples (Portion of total RenderTask assigned to Worker, Worker progress)
+  - Hint: Calling only necessary if in distributed stage (currently Rendering only)
 
 ### 3. TaskScheduler
 

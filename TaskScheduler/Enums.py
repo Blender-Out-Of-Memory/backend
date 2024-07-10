@@ -48,3 +48,15 @@ class RenderOutputType(Enum):
 class BlenderDataType(Enum):
     SingleFile = 0
     MultiFile = 1
+
+class TaskStage(Enum):
+    Uploading       = 0
+    Pending         = 1  # waiting for Worker to be assigned to
+    Distributing    = 2
+    Rendering       = 3
+    Concatenating   = 4
+    Finished        = 5
+    Expired         = 6  # task result deleted from Server
+
+    def base_progress(self):
+        return max(self.value / 5, 1.0)
