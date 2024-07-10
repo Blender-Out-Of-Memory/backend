@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class WorkermgmtConfig(AppConfig):
+class WorkermanagerConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'WorkerMgmt'
+    name = 'WorkerManager'
