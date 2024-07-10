@@ -87,23 +87,6 @@ Specifies if the Blender data is a single file or multiple files:
 - SingleFile (.blend)
 - MultiFile (placeholder for later implementation) (.zip, containing one or multiple .blend files & other resources if not included in .blend files)
 
-## Workflow
-
-1. **Upload the file by calling POST with file as body on URL:**
-    ```
-    /api/taskscheduler/render-tasks/run_task/
-   ```
-   Response: Key to reference the task in later requests
-   <br><br>
-2. **Poll progress report by calling GET with key as argument on URL:**
-   ```
-   [TO BE DONE]
-    ```
-3. **Download render results if progress polling reports finished by calling GET with key as argument on URL:**
-    ```
-   [TO BE DONE]
-   ```
-
 
 ## API
 
