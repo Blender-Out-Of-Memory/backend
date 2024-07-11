@@ -2,6 +2,7 @@ from typing import Optional, Tuple
 from django.db.models import Max
 
 from .models import RenderTask, BlenderDataType
+from WorkerManager.WorkerManager import WorkerManager
 
 def _int_to_id(value: int, prefix: str) -> str:
     hex_string = format(value, 'x')
@@ -36,8 +37,12 @@ class TaskScheduler:
 
     @staticmethod
     def run_task(task_id: str) -> bool:  # call after upload
-        task = RenderTask.objects.get(TaskID=task_id)
-        if (task is None):
+        print("Srached: " + task_id)
+        for a in RenderTask.objects.all():
+            print(a.TaskID)
+        try:
+            task = RenderTask.objects.get(TaskID=task_id)
+        except:
             print(f"ERROR: Run task was called on unknown task_id: {task_id}")
             return False
 

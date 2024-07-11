@@ -1,8 +1,9 @@
 from enum import Enum
+from django.db import models
 
 # TODO (maybe): support decrecated output types for older blender versions
 # TODO: which of these formats aren't selectable from render settings / aren't valid output format
-class RenderOutputType(Enum):
+class RenderOutputType(models.IntegerChoices):
     TARGA = 0
     IRIS = 1
     # R_HAMX = 2, / *DEPRECATED * /%
@@ -45,18 +46,18 @@ class RenderOutputType(Enum):
         }
 
 
-class BlenderDataType(Enum):
-    SingleFile = 0
-    MultiFile = 1
+class BlenderDataType(models.TextChoices):
+    SingleFile = ("SINGL", "SingleFile")
+    MultiFile = ("MULTI", "MultiFile")
 
-class TaskStage(Enum):
-    Uploading       = 0
-    Pending         = 1  # waiting for Worker to be assigned to
-    Distributing    = 2
-    Rendering       = 3
-    Concatenating   = 4
-    Finished        = 5
-    Expired         = 6  # task result deleted from Server
+class TaskStage(models.TextChoices):
+    Uploading       = ("UPL", "Uploading")
+    Pending         = ("PEN", "Pending")  # waiting for Worker to be assigned to
+    Distributing    = ("DIS", "Distributing")
+    Rendering       = ("REN", "Rendering")
+    Concatenating   = ("CON", "Concatenating")
+    Finished        = ("FIN", "Finished")
+    Expired         = ("EXP", "Expired")  # task result deleted from Server
 
     def base_progress(self):
         return max(self.value / 5, 1.0)

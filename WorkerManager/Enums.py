@@ -1,8 +1,7 @@
-from enum import Enum
+from django.db import models
 
-
-class WorkerStatus(Enum):
-	Available = 1
-	Working = 2
-	Quitting = 3  # will quit after finishing current task
-	Disconnected = 4
+class WorkerStatus(models.TextChoices):
+	Available       = ("AV", "Available")
+	Working         = ("WK", "Working")
+	Quitting        = ("QT", "Quitting")  # Working but will quit after finishing current task
+	Disconnected    = ("DC", "Disconnected")

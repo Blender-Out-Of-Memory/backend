@@ -13,28 +13,16 @@ from .Enums import BlenderDataType, RenderOutputType, TaskStage
 # -> different approach: pass class name to foreign key fields
 
 class RenderTask(models.Model):
-    taskID_Int          = models.PositiveSmallIntegerField(primary_key=True)
+    TaskID_Int          = models.PositiveSmallIntegerField(primary_key=True)
     TaskID              = models.CharField(max_length=21, unique=True)  # for developement
     FileServerAddress   = models.URLField()
-    FileServerPort      = models.PositiveIntegerField()# PositiveSmallIntegerField not possible as range is 0-32k
-    dataType            = models.CharField(max_length=1)  # choices=[(member.value, member.name) for member in BlenderDataType])
-    outputType          = models.CharField(max_length=1)  # , choices=[(member.value, member.name) for member in RenderOutputType])
-    StartFrame          = models.PositiveIntegerField()
-    EndFrame            = models.PositiveIntegerField()
-    FrameStep           = models.PositiveIntegerField()
-    stage               = models.CharField(max_length=1)
-
-    @property
-    def DataType(self):
-        return BlenderDataType(self.dataType)
-
-    @property
-    def OutputType(self):
-        return RenderOutputType(self.outputType)
-
-    @property
-    def Stage(self):
-        return TaskStage(self.stage)
+    FileServerPort      = models.PositiveIntegerField()  # PositiveSmallIntegerField not possible as range is 0-32k
+    DataType            = models.CharField(max_length=5, choices=BlenderDataType)
+    OutputType          = models.PositiveSmallIntegerField(null=True, choices=RenderOutputType)
+    StartFrame          = models.PositiveIntegerField(null=True)
+    EndFrame            = models.PositiveIntegerField(null=True)
+    FrameStep           = models.PositiveIntegerField(null=True)
+    Stage               = models.CharField(max_length=3, choices=TaskStage)
 
     def get_folder(self) -> str:
         return os.path.abspath(f"tasks/{self.TaskID}/")
@@ -112,7 +100,8 @@ class RenderTask(models.Model):
             print("ERROR: Failed to create new folder for new task")
             return None
 
-        instance = cls(TaskID_Int = taskID_int, TaskID=taskID, FileServerAddress=fileServerAddress, FileServerPort=fileServerPort, dataType=dataType.value)
+        instance = cls(TaskID_Int=taskID_int, TaskID=taskID, FileServerAddress=fileServerAddress, FileServerPort=fileServerPort, DataType=dataType, Stage=TaskStage.Uploading)
+        instance.save()
         return instance
 
     def complete(self) -> bool:
@@ -120,11 +109,11 @@ class RenderTask(models.Model):
         if (scene is None):
             return False
 
-        self.outputType = scene.OutputType
+        self.OutputType = scene.OutputType
         self.StartFrame = scene.StartFrame
         self.EndFrame   = scene.EndFrame
         self.FrameStep  = scene.FrameStep
-        self.stage      = TaskStage.Pending
+        self.Stage      = TaskStage.Pending
         return True
 
     # do not define custom constructor, models.Model's constructor must be called to init valid db object
