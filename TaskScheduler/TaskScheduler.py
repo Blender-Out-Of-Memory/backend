@@ -2,7 +2,7 @@ from typing import Optional, Tuple
 from django.db.models import Max
 
 from .models import RenderTask, BlenderDataType
-from WorkerManager.WorkerManager import WorkerManager
+# from WorkerManager.WorkerManager import WorkerManager
 
 def _int_to_id(value: int, prefix: str) -> str:
     hex_string = format(value, 'x')
@@ -29,7 +29,7 @@ class TaskScheduler:
         tries = 0
         task = None
         while (tries < MAX_TRIES and task is None):
-            taskID = _int_to_id(TaskScheduler.idCounter, "T:")  # provisional solution
+            taskID = _int_to_id(TaskScheduler.idCounter, "T-")  # provisional solution
             task = RenderTask.create(TaskScheduler.idCounter, taskID, fileServerAddress, fileServerPort, blenderDataType)
             TaskScheduler.idCounter += 1
 
