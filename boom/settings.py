@@ -51,6 +51,8 @@ entsprechenden .env File geladen.
 """
 # DEBUG = env("DEBUG")
 DEBUG = True
+DATA_UPLOAD_MAX_MEMORY_SIZE = 262144000
+FILE_UPLOAD_MAX_MEMORY_SIZE = 262144000
 
 """
 Aus Sicherheitsgründen sollen nicht beliebige Anfragen akzeptiert
