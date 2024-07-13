@@ -2,13 +2,16 @@ from __future__ import annotations
 
 from django.db import models
 
-from .BlendFile import BlendFile
+from .BlendFile import ImageType as BlendFileImageType
+from .BlendFile import Scene as BlendFileScene
 
 class RenderOutputType(models.TextChoices):
     RGB = (".rgb", "Iris")
     JPG = (".jpg", "JPEG")
     JP2 = (".jp2", "JPEG 200 J2")
     J2C = (".j2c", "JPEG 200 J2K")
+    PNG = (".png", "PNG")
+    BMP = (".bmp", "BMP")
     TGA = (".tga", "TARGA")
     TGR = (".tga.r", "TARGA Raw")
     CIN = (".cin", "Cineon")
@@ -41,11 +44,11 @@ class RenderOutputType(models.TextChoices):
         return self.value[0][0:end]
 
     @staticmethod
-    def from_scene(scene: BlendFile.Scene) -> RenderOutputType:
-        if (scene.OutputType == BlendFile.ImageType.JP2):
+    def from_scene(scene: BlendFileScene) -> RenderOutputType:
+        if (scene.OutputType == BlendFileImageType.JP2):
             return RenderOutputType.JP2 if (scene.JP2Codec == 0) else RenderOutputType.J2C
 
-        if (scene.OutputType == BlendFile.ImageType.FFMPEG):
+        if (scene.OutputType == BlendFileImageType.FFMPEG):
             return {
                  0: RenderOutputType.MPG,
                  1: RenderOutputType.DVD,
@@ -60,19 +63,21 @@ class RenderOutputType(models.TextChoices):
             }[scene.FFmpegContainer]
 
         return {
-            BlendFile.ImageType.IRIS:                   RenderOutputType.RGB,
-            BlendFile.ImageType.R_IMF_IMTYPE_JPEG90:    RenderOutputType.JPG,
-            BlendFile.ImageType.TARGA:                  RenderOutputType.TGA,
-            BlendFile.ImageType.RAWTGA:                 RenderOutputType.TGR,
-            BlendFile.ImageType.CINEON:                 RenderOutputType.CIN,
-            BlendFile.ImageType.DPX:                    RenderOutputType.DPX,
-            BlendFile.ImageType.OPENEXR:                RenderOutputType.EXR,
-            BlendFile.ImageType.MULTILAYER:             RenderOutputType.MXR,
-            BlendFile.ImageType.RADHDR:                 RenderOutputType.HDR,
-            BlendFile.ImageType.TIFF:                   RenderOutputType.TIF,
-            BlendFile.ImageType.WEBP:                   RenderOutputType.WBP,
-            BlendFile.ImageType.AVIJPEG:                RenderOutputType.AVJ,
-            BlendFile.ImageType.AVIRAW:                 RenderOutputType.AVR,
+            BlendFileImageType.IRIS:                RenderOutputType.RGB,
+            BlendFileImageType.R_IMF_IMTYPE_JPEG90: RenderOutputType.JPG,
+            BlendFileImageType.PNG:                 RenderOutputType.PNG,
+            BlendFileImageType.BMP:                 RenderOutputType.BMP,
+            BlendFileImageType.TARGA:               RenderOutputType.TGA,
+            BlendFileImageType.RAWTGA:              RenderOutputType.TGR,
+            BlendFileImageType.CINEON:              RenderOutputType.CIN,
+            BlendFileImageType.DPX:                 RenderOutputType.DPX,
+            BlendFileImageType.OPENEXR:             RenderOutputType.EXR,
+            BlendFileImageType.MULTILAYER:          RenderOutputType.MXR,
+            BlendFileImageType.RADHDR:              RenderOutputType.HDR,
+            BlendFileImageType.TIFF:                RenderOutputType.TIF,
+            BlendFileImageType.WEBP:                RenderOutputType.WBP,
+            BlendFileImageType.AVIJPEG:             RenderOutputType.AVJ,
+            BlendFileImageType.AVIRAW:              RenderOutputType.AVR,
         }[scene.OutputType]
 
 

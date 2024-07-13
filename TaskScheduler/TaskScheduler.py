@@ -4,11 +4,13 @@ from django.db.models import Max
 from .models import RenderTask, BlenderDataType
 # from WorkerManager.WorkerManager import WorkerManager
 
+
 def _int_to_id(value: int, prefix: str) -> str:
     hex_string = format(value, 'x')
     hex_string = hex_string.zfill(16)
     formatted_hex = '_'.join(hex_string[i:i + 4] for i in range(0, len(hex_string), 4))
     return f"{prefix}{formatted_hex}"
+
 
 class TaskScheduler:
     idCounter: int = 0  # provisional solution
@@ -33,13 +35,10 @@ class TaskScheduler:
             task = RenderTask.create(TaskScheduler.idCounter, taskID, fileServerAddress, fileServerPort, blenderDataType)
             TaskScheduler.idCounter += 1
 
-        return None if (task is None) else (task.TaskID, task.blender_data_path())
+        return None if (task is None) else (task.TaskID, task.get_blender_data_path())
 
     @staticmethod
     def run_task(task_id: str) -> bool:  # call after upload
-        print("Srached: " + task_id)
-        for a in RenderTask.objects.all():
-            print(a.TaskID)
         try:
             task = RenderTask.objects.get(TaskID=task_id)
         except:
