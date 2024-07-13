@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import timezone
 
 import os
 import shutil
@@ -25,6 +26,8 @@ class RenderTask(models.Model):
     FrameStep           = models.PositiveIntegerField(null=True)
     Stage               = models.CharField(max_length=5, choices=TaskStage)
     created_by          = models.ForeignKey(User, null=True, blank=True, default=None, on_delete=models.CASCADE)
+    StartedAt           = models.DateTimeField(default=timezone.now)
+    FinishedAt          = models.DateTimeField(null=True)
 
     def get_folder(self) -> str:
         return os.path.abspath(f"tasks/{self.TaskID}/")
@@ -48,11 +51,16 @@ class RenderTask(models.Model):
             "Frame-Step": self.FrameStep,
         }
 
+    def update_finish(self):
+        self.FinishedAt = timezone.now()
+        self.save()
+
     def progres_simple(self) -> Tuple[TaskStage, float, float]:  # (TaskStage, current stage progress, total progress)
         totalProgress = self.Stage.base_progress()
 
         if (self.Stage.value >= TaskStage.Finished.value):
             currentStageProgress = 1.0
+            self.update_finish()
 
         if (self.Stage == TaskStage.Concatenating):
             currentStageProgress = 0.0  # to be done
