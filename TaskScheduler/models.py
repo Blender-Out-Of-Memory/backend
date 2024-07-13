@@ -17,41 +17,32 @@ class RenderTask(models.Model):
     TaskID_Int          = models.PositiveSmallIntegerField(primary_key=True)
     TaskID              = models.CharField(max_length=21, unique=True)  # for developement
     FileServerAddress   = models.URLField()
-    FileServerPort      = models.PositiveIntegerField()# PositiveSmallIntegerField not possible as range is 0-32k
-    dataType            = models.CharField(max_length=1)  # choices=[(member.value, member.name) for member in BlenderDataType])
-    outputType          = models.CharField(max_length=1)  # , choices=[(member.value, member.name) for member in RenderOutputType])
-    StartFrame          = models.PositiveIntegerField()
-    EndFrame            = models.PositiveIntegerField()
-    FrameStep           = models.PositiveIntegerField()
-    stage               = models.CharField(max_length=1)
+    FileServerPort      = models.PositiveIntegerField()  # PositiveSmallIntegerField not possible as range is 0-32k
+    DataType            = models.CharField(max_length=5, choices=BlenderDataType)
+    OutputType          = models.CharField(max_length=6, null=True, choices=RenderOutputType)
+    StartFrame          = models.PositiveIntegerField(null=True)
+    EndFrame            = models.PositiveIntegerField(null=True)
+    FrameStep           = models.PositiveIntegerField(null=True)
+    Stage               = models.CharField(max_length=5, choices=TaskStage)
     created_by          = models.ForeignKey(User, null=True, blank=True, default=None, on_delete=models.CASCADE)
-
-    @property
-    def DataType(self):
-        return BlenderDataType(self.dataType)
-
-    @property
-    def OutputType(self):
-        return RenderOutputType(self.outputType)
-
-    @property
-    def Stage(self):
-        return TaskStage(self.stage)
 
     def get_folder(self) -> str:
         return os.path.abspath(f"tasks/{self.TaskID}/")
 
-    def blender_data_path(self) -> str:
+    def get_blender_data_path(self) -> str:
         filename = "blenderdata." + ("blend" if (self.DataType == BlenderDataType.SingleFile) else "zip")
         return f"{self.get_folder()}/{filename}"
+
+    def get_result_path(self) -> str:
+        return f"{self.get_folder()}/result{self.OutputType.get_extension()}"
 
     def to_headers(self) -> Dict:
         return {
             "Task-ID": self.TaskID,
             "File-Server-Address": self.FileServerAddress,
             "File-Server-Port": self.FileServerPort,
-            "Blender-Data-Type": self.DataType.value,
-            "Output-Type": self.OutputType.value,
+            "Blender-Data-Type": self.DataType,
+            "Output-Type": self.OutputType,
             "Start-Frame": self.StartFrame,
             "End-Frame": self.EndFrame,
             "Frame-Step": self.FrameStep,
@@ -114,19 +105,22 @@ class RenderTask(models.Model):
             print("ERROR: Failed to create new folder for new task")
             return None
 
-        instance = cls(TaskID_Int = taskID_int, TaskID=taskID, FileServerAddress=fileServerAddress, FileServerPort=fileServerPort, dataType=dataType.value)
+        instance = cls(TaskID_Int=taskID_int, TaskID=taskID, FileServerAddress=fileServerAddress, FileServerPort=fileServerPort, DataType=dataType, Stage=TaskStage.Uploading)
+        instance.save()
         return instance
 
     def complete(self) -> bool:
-        scene = BlendFile.get_current_scene(self.blender_data_path())
+        scene = BlendFile.get_current_scene(self.get_blender_data_path())
         if (scene is None):
             return False
 
-        self.outputType = scene.OutputType
         self.StartFrame = scene.StartFrame
         self.EndFrame   = scene.EndFrame
         self.FrameStep  = scene.FrameStep
-        self.stage      = TaskStage.Pending
+        self.Stage      = TaskStage.Pending
+
+        self.OutputType = RenderOutputType.from_scene(scene)
+
         return True
 
     # do not define custom constructor, models.Model's constructor must be called to init valid db object

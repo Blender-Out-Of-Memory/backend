@@ -1,62 +1,94 @@
-from enum import Enum
+from __future__ import annotations
 
-# TODO (maybe): support decrecated output types for older blender versions
-# TODO: which of these formats aren't selectable from render settings / aren't valid output format
-class RenderOutputType(Enum):
-    TARGA = 0
-    IRIS = 1
-    # R_HAMX = 2, / *DEPRECATED * /%
-    # R_FTYPE = 3, / *DEPRECATED * /
-    # R_IMF_IMTYPE_JPEG90 = 4,
-    # R_MOVIE = 5, / *DEPRECATED * /
-    IRIZ = 7  # ??? invalid
-    RAWTGA = 14
-    AVIRAW = 15
-    AVIJPEG = 16
-    PNG = 17
-    # R_IMF_IMTYPE_AVICODEC = 18, / *DEPRECATED * /
-    # R_IMF_IMTYPE_QUICKTIME = 19, / *DEPRECATED * /
-    BMP = 20
-    RADHDR = 21
-    TIFF = 22
-    OPENEXR = 23
-    FFMPEG = 24
-    # R_IMF_IMTYPE_FRAMESERVER = 25, / *DEPRECATED * /
-    CINEON = 26
-    DPX = 27
-    MULTILAYER = 28  # ??? OPENEXR Multilayer or invalid ??
-    DDS = 29  # ??? invalid
-    JP2 = 30  # JPEG 2000 or JPEG
-    # or invalid ??
-    H264 = 31  # ??? codec of ffmpeg
-    XVID = 32  # ??? invalid
-    THEORA = 33  # ??? codec of ffmpeg
-    PSD = 34  # ??? invalid
-    WEBP = 35
-    AV1 = 36  # ??? invalid
+from django.db import models
 
-    INVALID = 255  # ??? invalid
+from .BlendFile import BlendFile
 
-    def is_video(self):  # and definitely valid format
-        return self in {
-            RenderOutputType.AVIRAW,
-            RenderOutputType.AVIJPEG,
-            RenderOutputType.FFMPEG,
-        }
+class RenderOutputType(models.TextChoices):
+    RGB = (".rgb", "Iris")
+    JPG = (".jpg", "JPEG")
+    JP2 = (".jp2", "JPEG 200 J2")
+    J2C = (".j2c", "JPEG 200 J2K")
+    TGA = (".tga", "TARGA")
+    TGR = (".tga.r", "TARGA Raw")
+    CIN = (".cin", "Cineon")
+    DPX = (".dpx", "DPX")
+    EXR = (".exr", "OpenEXR")
+    MXR = (".exr.m", "OpenEXR Multilayer")
+    HDR = (".hdr", "Radiance HDR")
+    TIF = (".tif", "TIFF")
+    WBP = (".webp", "WebP")
+    AVJ = (".avi.j", "AVI JPEG")
+    AVR = (".avi.r", "AVI RAW")
+
+    # FFmpeg                     # Container (field 'type')
+    MPG = (".mpg", "MPEG-1")     # 0
+    DVD = (".dvd", "MPEG-2")     # 1
+    MP4 = (".mp4", "MPEG-4")     # 2
+    AVI = (".avi", "AVI")        # 3
+    QKT = (".mov", "QuickTime")  # 4
+    DV  = (".dv" , "DV")         # 5
+    FLV = (".flv", "Flash")      # 8
+    MKV = (".mkv", "Matroska")   # 9
+    OGG = (".ogv", "OGG")        # 10
+    WBM = (".webm", "WebM")      # 12
+
+    def get_extension(self):
+        # get index of second dot if exists
+        additionalIndex = self.value[0].find(".", 1)
+        end = additionalIndex if (additionalIndex != -1) else len(self.value[0])
+        # chars after additionalIndex don't belong to extension
+        return self.value[0][0:end]
+
+    @staticmethod
+    def from_scene(scene: BlendFile.Scene) -> RenderOutputType:
+        if (scene.OutputType == BlendFile.ImageType.JP2):
+            return RenderOutputType.JP2 if (scene.JP2Codec == 0) else RenderOutputType.J2C
+
+        if (scene.OutputType == BlendFile.ImageType.FFMPEG):
+            return {
+                 0: RenderOutputType.MPG,
+                 1: RenderOutputType.DVD,
+                 2: RenderOutputType.MP4,
+                 3: RenderOutputType.AVI,
+                 4: RenderOutputType.QKT,
+                 5: RenderOutputType.DV,
+                 8: RenderOutputType.FLV,
+                 9: RenderOutputType.MKV,
+                10: RenderOutputType.OGG,
+                12: RenderOutputType.WBM
+            }[scene.FFmpegContainer]
+
+        return {
+            BlendFile.ImageType.IRIS:                   RenderOutputType.RGB,
+            BlendFile.ImageType.R_IMF_IMTYPE_JPEG90:    RenderOutputType.JPG,
+            BlendFile.ImageType.TARGA:                  RenderOutputType.TGA,
+            BlendFile.ImageType.RAWTGA:                 RenderOutputType.TGR,
+            BlendFile.ImageType.CINEON:                 RenderOutputType.CIN,
+            BlendFile.ImageType.DPX:                    RenderOutputType.DPX,
+            BlendFile.ImageType.OPENEXR:                RenderOutputType.EXR,
+            BlendFile.ImageType.MULTILAYER:             RenderOutputType.MXR,
+            BlendFile.ImageType.RADHDR:                 RenderOutputType.HDR,
+            BlendFile.ImageType.TIFF:                   RenderOutputType.TIF,
+            BlendFile.ImageType.WEBP:                   RenderOutputType.WBP,
+            BlendFile.ImageType.AVIJPEG:                RenderOutputType.AVJ,
+            BlendFile.ImageType.AVIRAW:                 RenderOutputType.AVR,
+        }[scene.OutputType]
 
 
-class BlenderDataType(Enum):
-    SingleFile = 0
-    MultiFile = 1
+class BlenderDataType(models.TextChoices):
+    SingleFile = ("SINGL", "SingleFile")
+    MultiFile = ("MULTI", "MultiFile")
 
-class TaskStage(Enum):
-    Uploading       = 0
-    Pending         = 1  # waiting for Worker to be assigned to
-    Distributing    = 2
-    Rendering       = 3
-    Concatenating   = 4
-    Finished        = 5
-    Expired         = 6  # task result deleted from Server
+
+class TaskStage(models.TextChoices):
+    Uploading       = ("1-UPL", "Uploading")
+    Pending         = ("2-PEN", "Pending")  # waiting for Worker to be assigned to
+    Distributing    = ("3-DIS", "Distributing")
+    Rendering       = ("4-REN", "Rendering")
+    Concatenating   = ("5-CON", "Concatenating")
+    Finished        = ("6-FIN", "Finished")
+    Expired         = ("7-EXP", "Expired")  # task result deleted from Server
 
     def base_progress(self):
-        return max(self.value / 5, 1.0)
+        return max(int(self.value[0][0]) / 5, 1.0)
