@@ -12,25 +12,95 @@ class Endianness(Enum):
         return self.value
 
 
+# TODO (maybe): support decrecated output types for older blender versions
+# TODO: which of these formats aren't selectable from render settings / aren't valid output format
+class ImageType(Enum):
+    TARGA = 0
+    IRIS = 1
+    # R_HAMX = 2, / *DEPRECATED * /%
+    # R_FTYPE = 3, / *DEPRECATED * /
+    R_IMF_IMTYPE_JPEG90 = 4  # JPEG
+    # R_MOVIE = 5, / *DEPRECATED * /
+    IRIZ = 7  # seems to be removed (long) before Blender 4.1
+    RAWTGA = 14
+    AVIRAW = 15
+    AVIJPEG = 16
+    PNG = 17
+    # R_IMF_IMTYPE_AVICODEC = 18, / *DEPRECATED * /
+    # R_IMF_IMTYPE_QUICKTIME = 19, / *DEPRECATED * /
+    BMP = 20
+    RADHDR = 21
+    TIFF = 22
+    OPENEXR = 23
+    FFMPEG = 24
+    # R_IMF_IMTYPE_FRAMESERVER = 25, / *DEPRECATED * /
+    CINEON = 26
+    DPX = 27
+    MULTILAYER = 28  # OPENEXR Multilayer
+    DDS = 29  # ??? invalid
+    JP2 = 30  # JPEG 2000
+    H264 = 31  # ??? codec of ffmpeg
+    XVID = 32  # ??? invalid
+    THEORA = 33  # ??? codec of ffmpeg
+    PSD = 34  # ??? invalid
+    WEBP = 35
+    AV1 = 36  # ??? invalid
+
+    INVALID = 255
+
+    def is_video(self) -> bool:  # and definitely valid format
+        return self in {
+            ImageType.AVIRAW,
+            ImageType.AVIJPEG,
+            ImageType.FFMPEG,
+        }
+
+    def is_unsupported(self) -> bool:
+        return self in {
+            ImageType.IRIZ,
+            ImageType.DDS,
+            ImageType.H264,
+            ImageType.XVID,
+            ImageType.THEORA,
+            ImageType.PSD,
+            ImageType.AV1,
+            ImageType.INVALID,
+
+            ImageType.MULTILAYER  # for the time being
+        }
+
+
 class Scene:
     Name: str
     StartFrame: int
     EndFrame: int
     FrameStep: int
-    OutputType: int
+    ImageType: ImageType
 
-    def __init__(self, name: str, startFrame: int, endFrame: int, frameStep: int, OutputType: int):
+    # optional
+    JP2Codec: int
+    FFmpegContainer: int
+
+
+    def __init__(self, name: str, startFrame: int, endFrame: int, frameStep: int, imtype: int):
         self.Name = name
         self.StartFrame = startFrame
         self.EndFrame = endFrame
         self.FrameStep = frameStep
-        self.OutputType = OutputType
+        if (imtype not in ImageType):
+            ValueError(f"ImageType {imtype} is unknown")
+        self.OutputType = ImageType(imtype)
+        if (self.OutputType.is_unsupported()):
+            raise ValueError(f"ImageType {self.OutputType} is not supported")
+
+        self.JP2Codec = -1
+        self.FFmpegContainer = -1
 
 class Header:
-    Identifier: str #Int8[7] as string
-    PointerSize: int #Int8 as char
-    Endianness: Endianness #Int8 as char
-    Version: int #Int8[3] as string
+    Identifier: str  # Int8[7] as string
+    PointerSize: int  # Int8 as char
+    Endianness: Endianness  # Int8 as char
+    Version: int  # Int8[3] as string
 
     @classmethod
     def read(cls, bytestream: BinaryIO):
@@ -459,13 +529,48 @@ class BlendFile:
                     if (im_format is None):
                         print("Failed to read ImageFormat")
                         continue
+
                     if ("imtype" not in im_format):
-                        print("Required information missing in ImageFormat")
+                        print("Required information 'imtype' missing in ImageFormat")
                         continue
 
                     imtype = int.from_bytes(im_format["imtype"]["Value"], header.Endianness.as_literal())
+                    try:
+                        currentScene = Scene(name, sfra, efra, frame_step, imtype)
+                    except ValueError as ex:
+                        continue
 
-                    currentScene = Scene(name, sfra, efra, frame_step, imtype)
+                    if (currentScene.OutputType == ImageType.JP2):
+                        if ("jp2_codec" not in im_format):
+                            print("Required information 'jp2_codec' missing in ImageFormat")
+                            continue
+                        jp2_codec = int.from_bytes(im_format["jp2_codec"]["Value"], header.Endianness.as_literal())
+                        if (jp2_codec not in (0, 1)):
+                            print(f"Unknown JP2_Codec: {jp2_codec}")
+                            continue
+                        currentScene.JP2Codec = jp2_codec
+
+                    elif (currentScene.OutputType == ImageType.FFMPEG):
+                        if ("ffcodecdata" not in renderData):
+                            print("Required information 'ffcodecdata' missing in RenderData")
+                            continue
+                        ffmpegCD = sdna.read_struct_from_name(io.BytesIO(renderData["ffcodecdata"]["Value"]), renderData["ffcodecdata"]["FieldType"], header.Endianness)
+                        if (ffmpegCD is None):
+                            print("Failed to read FFMpegCodecData")
+                            continue
+
+                        if ("type" not in ffmpegCD):
+                            print("Required information 'type' missing in FFMpegCodecData")
+                            continue
+
+                        type = int.from_bytes(ffmpegCD["type"]["Value"], header.Endianness.as_literal())
+                        if (type not in (0, 1, 2, 3, 4, 5, 8, 9, 10, 12)):
+                            print(f"Unknown FFMpeg container type {type}")
+                            continue
+
+                        currentScene.FFmpegContainer = type
+
+
                     #scenes.append(currentScene)
                 if (currentScene is None):
                     print("No scene with the name specified in REND was found")

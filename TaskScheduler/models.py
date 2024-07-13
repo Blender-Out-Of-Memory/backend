@@ -18,26 +18,29 @@ class RenderTask(models.Model):
     FileServerAddress   = models.URLField()
     FileServerPort      = models.PositiveIntegerField()  # PositiveSmallIntegerField not possible as range is 0-32k
     DataType            = models.CharField(max_length=5, choices=BlenderDataType)
-    OutputType          = models.PositiveSmallIntegerField(null=True, choices=RenderOutputType)
+    OutputType          = models.CharField(max_length=6, null=True, choices=RenderOutputType)
     StartFrame          = models.PositiveIntegerField(null=True)
     EndFrame            = models.PositiveIntegerField(null=True)
     FrameStep           = models.PositiveIntegerField(null=True)
-    Stage               = models.CharField(max_length=3, choices=TaskStage)
+    Stage               = models.CharField(max_length=5, choices=TaskStage)
 
     def get_folder(self) -> str:
         return os.path.abspath(f"tasks/{self.TaskID}/")
 
-    def blender_data_path(self) -> str:
+    def get_blender_data_path(self) -> str:
         filename = "blenderdata." + ("blend" if (self.DataType == BlenderDataType.SingleFile) else "zip")
         return f"{self.get_folder()}/{filename}"
+
+    def get_result_path(self) -> str:
+        return f"{self.get_folder()}/result{self.OutputType.get_extension()}"
 
     def to_headers(self) -> Dict:
         return {
             "Task-ID": self.TaskID,
             "File-Server-Address": self.FileServerAddress,
             "File-Server-Port": self.FileServerPort,
-            "Blender-Data-Type": self.DataType.value,
-            "Output-Type": self.OutputType.value,
+            "Blender-Data-Type": self.DataType,
+            "Output-Type": self.OutputType,
             "Start-Frame": self.StartFrame,
             "End-Frame": self.EndFrame,
             "Frame-Step": self.FrameStep,
@@ -105,15 +108,17 @@ class RenderTask(models.Model):
         return instance
 
     def complete(self) -> bool:
-        scene = BlendFile.get_current_scene(self.blender_data_path())
+        scene = BlendFile.get_current_scene(self.get_blender_data_path())
         if (scene is None):
             return False
 
-        self.OutputType = scene.OutputType
         self.StartFrame = scene.StartFrame
         self.EndFrame   = scene.EndFrame
         self.FrameStep  = scene.FrameStep
         self.Stage      = TaskStage.Pending
+
+        self.OutputType = RenderOutputType.from_scene(scene)
+
         return True
 
     # do not define custom constructor, models.Model's constructor must be called to init valid db object
