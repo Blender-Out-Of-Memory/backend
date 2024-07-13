@@ -33,7 +33,7 @@ class TaskScheduler:
             task = RenderTask.create(TaskScheduler.idCounter, taskID, fileServerAddress, fileServerPort, blenderDataType)
             TaskScheduler.idCounter += 1
 
-        return None if (task is None) else (task.TaskID, task.blender_data_path())
+        return None if (task is None) else (task.TaskID, task.get_blender_data_path())
 
     @staticmethod
     def run_task(task_id: str) -> bool:  # call after upload

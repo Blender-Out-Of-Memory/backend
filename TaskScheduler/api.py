@@ -36,7 +36,7 @@ class RenderTaskViewSet(viewsets.ModelViewSet):
         if not taskInfo:
             return Response({'error': 'Failed to initialize new task'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         taskID, filePath = taskInfo
-        with open(file_path, 'wb') as file:
+        with open(filePath, 'wb') as file:
             file.write(request.body)
         try:
             success = TaskScheduler.run_task(taskID)
