@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 import os
 import shutil
@@ -13,7 +14,7 @@ from .Enums import BlenderDataType, RenderOutputType, TaskStage
 # -> different approach: pass class name to foreign key fields
 
 class RenderTask(models.Model):
-    taskID_Int          = models.PositiveSmallIntegerField(primary_key=True)
+    TaskID_Int          = models.PositiveSmallIntegerField(primary_key=True)
     TaskID              = models.CharField(max_length=21, unique=True)  # for developement
     FileServerAddress   = models.URLField()
     FileServerPort      = models.PositiveIntegerField()# PositiveSmallIntegerField not possible as range is 0-32k
@@ -23,6 +24,7 @@ class RenderTask(models.Model):
     EndFrame            = models.PositiveIntegerField()
     FrameStep           = models.PositiveIntegerField()
     stage               = models.CharField(max_length=1)
+    created_by          = models.ForeignKey(User, null=True, blank=True, default=None, on_delete=models.CASCADE)
 
     @property
     def DataType(self):
