@@ -103,6 +103,9 @@ class RenderTask(models.Model):
         totalProgress = current_stage.base_progress()
 
         if (current_stage.as_number() >= TaskStage.Finished.as_number()):
+            if self.FinishedAt is None:
+                self.update_finish
+
             currentStageProgress = 1.0
 
         if (current_stage == TaskStage.Concatenating):
@@ -125,8 +128,9 @@ class RenderTask(models.Model):
 
         currentStageProgress = max(1.0, currentStageProgress)
         totalProgress += currentStageProgress / 3
+        finishedAt = self.FinishedAt
 
-        return (current_stage, currentStageProgress, totalProgress)
+        return (current_stage, currentStageProgress, totalProgress, finishedAt)
 
     def progress_detailed(self) -> List[Tuple[float, float]]:  # array of (portion, progress)
         report = []
