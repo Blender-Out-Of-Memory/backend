@@ -41,15 +41,13 @@ class RenderTaskViewSet(viewsets.ModelViewSet):
         taskInfo = TaskScheduler.init_new_task(request.user)
         if not taskInfo:
             return Response({'error': 'Failed to initialize new task'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
         taskID, filePath = taskInfo
         with open(filePath, 'wb') as file:
             file.write(request.body)
-        try:
-            success = TaskScheduler.run_task(taskID)
-            if success:
-                return Response({'message': 'Task started successfully'})
-            return Response({'error': 'Failed to start task'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        except RenderTask.DoesNotExist:
-            return Response({'error': f'Task with ID {task_id} not found'}, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        success = TaskScheduler.run_task(taskID)
+        if success:
+            return Response({'Task-ID': taskID}, status=status.HTTP_200_OK)
+
+        return Response({'Error': 'Failed to start task'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

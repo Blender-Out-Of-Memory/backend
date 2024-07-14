@@ -4,7 +4,7 @@ from .Enums import WorkerStatus
 
 
 class Worker(models.Model):
-	WorkerID_INT        = models.PositiveSmallIntegerField(primary_key=True)
+	WorkerID_Int        = models.PositiveSmallIntegerField(primary_key=True)
 	WorkerID            = models.CharField(max_length=21)
 	Host                = models.URLField(max_length=255)
 	Port                = models.PositiveIntegerField()

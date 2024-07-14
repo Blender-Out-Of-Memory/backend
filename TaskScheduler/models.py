@@ -8,7 +8,7 @@ from typing import Dict, Tuple, List
 
 # Same Django app
 from .BlendFile import BlendFile
-from .Enums import BlenderDataType, RenderOutputType, TaskStage
+from .Enums import BlenderDataType, RenderOutputType, TaskStage, SubtaskStage
 
 # Different Django app
 # from WorkerManager.models import Worker  # must be path from perspective of folder manage.py lies in
@@ -54,31 +54,73 @@ class RenderTask(models.Model):
     def update_finish(self):
         self.FinishedAt = timezone.now()
         self.save()
+    def get_all_frames(self) -> List[int]:
+        frames = []
+        for frame in range(self.StartFrame, self.EndFrame, self.FrameStep):
+            frames.append(frame)
 
-    def progress_simple(self) -> Tuple[TaskStage, float, float]:  # (TaskStage, current stage progress, total progress)
-        current_stage = TaskStage(self.Stage)
-        totalProgress = current_stage.base_progress()
+        return frames
 
-        if (current_stage.value >= TaskStage.Finished.value):
+    def get_unassigned_frames(self) -> List[Tuple[int, int]]:  # list of contiguous frame ranges
+        frames = self.get_all_frames()
+
+        subtasks = self.Subtask_set.all()
+        for subtask in subtasks:
+            upperLimit = subtask.EndFrame if ((subtask.Stage != SubtaskStage.Aborted)) else subtask.LastestFrame
+            for frame in range(subtask.StartFrame, upperLimit, self.FrameStep):
+                frames[frames.index(frame)] = -1
+
+        # for preparation of case: last frame range includes very last frame
+        frames.append(-1)
+
+        frame_ranges = []
+        start = -1
+        for i in range(0, len(frames)):
+            if (start == -1 and frames[i] != -1):  # start of contiguous frame range
+                start = frames[i]
+            elif (start != -1 and frames[i] == -1):  # end of contiguous frame range
+                frame_ranges.append((start, frames[i - 1]))
+                start = -1
+
+        return frame_ranges
+
+
+    def is_finished(self) -> bool:
+        frames = set(self.get_all_frames())
+
+        subtasks = self.Subtask_set.all()
+        for subtask in subtasks:
+            if subtask.Stage not in (SubtaskStage.Aborted, SubtaskStage.Finished):
+                continue
+
+            upperLimit = subtask.EndFrame if ((subtask.Stage != SubtaskStage.Aborted)) else subtask.LastestFrame
+            for frame in range(subtask.StartFrame, upperLimit, self.FrameStep):
+                frames = frames - {frame}
+
+        return not bool(frames)  # true if set is empty
+
+    def progres_simple(self) -> Tuple[TaskStage, float, float]:  # (TaskStage, current stage progress, total progress)
+        totalProgress = self.Stage.base_progress()
+
+        if (self.Stage.value >= TaskStage.Finished.value):
             currentStageProgress = 1.0
-            self.update_finish()
 
-        if (current_stage == TaskStage.Concatenating):
+        if (self.Stage == TaskStage.Concatenating):
             currentStageProgress = 0.0  # to be done
 
-        if (current_stage == TaskStage.Rendering):
+        if (self.Stage == TaskStage.Rendering):
             subtasks = self.Subtask_set.all()
             currentStageProgress = 0.0
             for subtask in subtasks:
                 currentStageProgress += subtask.progress_weighted()
 
-        if (current_stage == TaskStage.Distributing):
+        if (self.Stage == TaskStage.Distributing):
             currentStageProgress = 0.0  # to be done
 
-        if (current_stage == TaskStage.Pending):
+        if (self.Stage == TaskStage.Pending):
             currentStageProgress = float("-inf")  # alternatively show progress in pending tasks queue
 
-        if (current_stage == TaskStage.Uploading):
+        if (self.Stage == TaskStage.Uploading):
             currentStageProgress = 0.0  # to be done
 
         currentStageProgress = max(1.0, currentStageProgress)
@@ -88,7 +130,7 @@ class RenderTask(models.Model):
 
     def progress_detailed(self) -> List[Tuple[float, float]]:  # array of (portion, progress)
         report = []
-        if (current_stage == TaskStage.Rendering):
+        if (self.Stage == TaskStage.Rendering):
             subtasks = self.Subtask_set.all()
             for subtask in subtasks:
                 report.append((subtask.Portion, subtask.progress()))
@@ -137,6 +179,7 @@ class RenderTask(models.Model):
 
 
 class Subtask(models.Model):
+    SubtaskIndex    = models.PositiveBigIntegerField(primary_key=True)
     Task            = models.ForeignKey(RenderTask, on_delete=models.CASCADE, related_name="Subtasks")  # is CASCADE right ??
     Worker          = models.ForeignKey("WorkerManager.Worker", on_delete=models.CASCADE)           # is CASCADE right ??
     StartFrame      = models.PositiveIntegerField()
@@ -144,6 +187,12 @@ class Subtask(models.Model):
     LastestFrame    = models.PositiveIntegerField()
     Portion         = models.FloatField()   # Portion of entire Task, relevant for total progres
                                             # Alternatively recalculate it each time in super task
+    Stage           = models.CharField(max_length=5, choices=SubtaskStage, default=SubtaskStage.Pending)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["SubtaskIndex", "Task"], name='SubtaskIndex-TaskID-UniqueConstraint')
+        ]
 
     # Internal values to avoid unnecessary db requests
     frameStep: int = -1
