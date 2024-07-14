@@ -111,7 +111,7 @@ class RenderTask(models.Model):
     def progress_simple(self) -> Tuple[TaskStage, float, float]:  # (TaskStage, current stage progress, total progress)
         totalProgress = self.Stage.base_progress()
 
-        if (self.Stage.value >= TaskStage.Finished.value):
+        if (self.Stage.as_number() >= TaskStage.Finished.as_number()):
             currentStageProgress = 1.0
 
         if (self.Stage == TaskStage.Concatenating):
