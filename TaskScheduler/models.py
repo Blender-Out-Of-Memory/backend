@@ -50,18 +50,6 @@ class RenderTask(models.Model):
         print(output_type)
         return f"{self.get_folder()}/result{output_type}"
 
-    def to_headers(self) -> Dict:
-        return {
-            "Task-ID": self.TaskID,
-            "File-Server-Address": self.FileServerAddress,
-            "File-Server-Port": self.FileServerPort,
-            "Blender-Data-Type": self.DataType,
-            "Output-Type": self.OutputType,
-            "Start-Frame": self.StartFrame,
-            "End-Frame": self.EndFrame,
-            "Frame-Step": self.FrameStep,
-        }
-
 
     def get_all_frames(self) -> List[int]:
         frames = []
@@ -201,6 +189,7 @@ class Subtask(models.Model):
     LastestFrame    = models.PositiveIntegerField()
     Portion         = models.FloatField()   # Portion of entire Task, relevant for total progres
                                             # Alternatively recalculate it each time in super task
+                                            # TODO: change if Subtask completes partially only
     Stage           = models.CharField(max_length=5, choices=SubtaskStage, default=SubtaskStage.Pending)
 
     class Meta:
@@ -208,15 +197,22 @@ class Subtask(models.Model):
             models.UniqueConstraint(fields=["SubtaskIndex", "Task"], name='SubtaskIndex-TaskID-UniqueConstraint')
         ]
 
-    # Internal values to avoid unnecessary db requests
-    frameStep: int = -1
+    def to_headers(self) -> Dict:
+        return {
+            "Task-ID":              self.Task.TaskID,
+            "Subtask-Index":        self.SubtaskIndex,
+            "File-Server-Address":  self.Task.FileServerAddress,
+            "File-Server-Port":     self.Task.FileServerPort,
+            "Blender-Data-Type":    self.Task.DataType,
+            "Output-Type":          self.Task.OutputType,
+            "Start-Frame":          self.StartFrame,
+            "End-Frame":            self.EndFrame,
+            "Frame-Step":           self.Task.FrameStep,
+        }
 
     def progress(self) -> float:
-        if (self.frameStep == -1):
-            self.frameStep = self.Task.FrameStep
-
-        totalFrames = (self.EndFrame - self.StartFrame) / self.frameStep + 1
-        framesDone = (self.LastestFrame - self.StartFrame) / self.frameStep + 1
+        totalFrames = (self.EndFrame - self.StartFrame) / self.Task.FrameStep + 1
+        framesDone = (self.LastestFrame - self.StartFrame) / self.Task.FrameStep + 1
         return framesDone / totalFrames
 
     def progress_weighted(self) -> float:

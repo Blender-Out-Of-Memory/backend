@@ -1,5 +1,5 @@
 import re
-from typing import Callable
+from typing import Callable, List
 from http import HTTPStatus
 
 from django.db.models import Max, QuerySet
@@ -39,6 +39,8 @@ class WorkerManager:
 
 	subtaskFailedCallback: Callable[[Subtask], None] = None
 
+
+	### Called via URL
 	@staticmethod
 	def set_callbacks(freeWorkerCb: Callable[[], None],
 					  subtaskFinishedCb: Callable[[RenderTask], None],
@@ -182,3 +184,10 @@ class WorkerManager:
 			WorkerManager.subtaskFinishedCallback(task)
 
 		subtask.save()
+
+
+	### Called from TaskScheduler
+	@staticmethod
+	def distribute_subtasks(subtasks: List[Subtask]):
+		for subtask in subtasks:
+			pass
