@@ -53,12 +53,13 @@ class RenderTaskViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["get"], url_path="job-progress")
     def job_progress(self, request, pk=None):
         job = self.get_object()
-        stage, currentStageProgress, totalProgress = job.progress_simple()
+        stage, currentStageProgress, totalProgress, finishedAt = job.progress_simple()
         return Response(
             {
                 "Stage": stage,
                 "currentStageProgress": currentStageProgress,
                 "totalProgress": totalProgress,
+                "finishedAt": finishedAt
             }
         )
 
