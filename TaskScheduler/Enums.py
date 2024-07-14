@@ -96,7 +96,10 @@ class TaskStage(models.TextChoices):
     Expired         = ("7-EXP", "Expired")  # task result deleted from Server
 
     def base_progress(self):
-        return max(int(self.value[0][0]) / 5, 1.0)
+        return max(int(self.as_number()) / 5, 1.0)
+
+    def as_number(self):
+        return int(self.value[0][0])
 
 
 class SubtaskStage(models.TextChoices):

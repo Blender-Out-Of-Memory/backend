@@ -112,7 +112,7 @@ class RenderTask(models.Model):
         current_stage = TaskStage(self.Stage)
         totalProgress = current_stage.base_progress()
 
-        if (current_stage.value >= TaskStage.Finished.value):
+        if (self.Stage.as_number() >= TaskStage.Finished.as_number()):
             currentStageProgress = 1.0
 
         if (current_stage == TaskStage.Concatenating):
