@@ -10,7 +10,7 @@ from .TaskScheduler import TaskScheduler
 
 class IsOwner(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
-        return obj.created_by == request.user
+        return obj.CreatedBy == request.user
 
 class RenderTaskViewSet(viewsets.ModelViewSet):
     queryset = RenderTask.objects.all()
@@ -30,12 +30,6 @@ class RenderTaskViewSet(viewsets.ModelViewSet):
             self.permission_classes = [IsAuthenticated]
         return super(RenderTaskViewSet, self).get_permissions()
 
-    @action(detail=True, methods=['get'], url_path='job-progress')
-    def job_progress(self, request, pk=None):
-        job = self.get_object()
-        stage, currentStageProgress, totalProgress = job.progress_simple()
-        return Response({'Stage': stage, 'currentStageProgress': currentStageProgress, 'totalProgress': totalProgress})
-
     @action(detail=False, methods=['post'])
     def run_task(self, request: HttpRequest):
         taskInfo = TaskScheduler.init_new_task(request.user)
@@ -51,3 +45,9 @@ class RenderTaskViewSet(viewsets.ModelViewSet):
             return Response({'Task-ID': taskID}, status=status.HTTP_200_OK)
 
         return Response({'Error': 'Failed to start task'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=True, methods=['get'], url_path='job-progress')
+    def job_progress(self, request, pk=None):
+        job = self.get_object()
+        stage, currentStageProgress, totalProgress = job.progress_simple()
+        return Response({'Stage': stage, 'currentStageProgress': currentStageProgress, 'totalProgress': totalProgress})

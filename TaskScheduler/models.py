@@ -16,7 +16,7 @@ from .Enums import BlenderDataType, RenderOutputType, TaskStage, SubtaskStage
 
 class RenderTask(models.Model):
     TaskID_Int          = models.PositiveSmallIntegerField(primary_key=True)
-    TaskID              = models.CharField(max_length=21, unique=True)  # for developement
+    TaskID              = models.CharField(max_length=21, unique=True)  # for development
     FileServerAddress   = models.URLField()
     FileServerPort      = models.PositiveIntegerField()  # PositiveSmallIntegerField not possible as range is 0-32k
     DataType            = models.CharField(max_length=5, choices=BlenderDataType)
@@ -25,10 +25,19 @@ class RenderTask(models.Model):
     EndFrame            = models.PositiveIntegerField(null=True)
     FrameStep           = models.PositiveIntegerField(null=True)
     Stage               = models.CharField(max_length=5, choices=TaskStage)
-    created_by          = models.ForeignKey(User, null=True, blank=True, default=None, on_delete=models.CASCADE)
+
+    # Metadata
+    CreatedBy          = models.ForeignKey(User, null=True, blank=True, default=None, on_delete=models.CASCADE)
     StartedAt           = models.DateTimeField(default=timezone.now)
     FinishedAt          = models.DateTimeField(null=True)
 
+    ### Metadata methods
+    def update_finish(self):
+        self.FinishedAt = timezone.now()
+        self.save()
+
+
+    ### Functional methods
     def get_folder(self) -> str:
         return os.path.abspath(f"tasks/{self.TaskID}/")
 
@@ -51,9 +60,7 @@ class RenderTask(models.Model):
             "Frame-Step": self.FrameStep,
         }
 
-    def update_finish(self):
-        self.FinishedAt = timezone.now()
-        self.save()
+
     def get_all_frames(self) -> List[int]:
         frames = []
         for frame in range(self.StartFrame, self.EndFrame, self.FrameStep):
