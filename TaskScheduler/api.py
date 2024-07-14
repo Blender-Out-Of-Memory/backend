@@ -14,7 +14,7 @@ import os
 
 class IsOwner(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
-        return obj.created_by == request.user
+        return obj.CreatedBy == request.user
 
 
 class RenderTaskViewSet(viewsets.ModelViewSet):
@@ -67,6 +67,7 @@ class RenderTaskViewSet(viewsets.ModelViewSet):
         taskInfo = TaskScheduler.init_new_task(request.user)
         if not taskInfo:
             return Response({'error': 'Failed to initialize new task'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
         taskID, filePath = taskInfo
         with open(filePath, "wb") as file:
             file.write(request.body)
