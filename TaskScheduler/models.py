@@ -46,7 +46,9 @@ class RenderTask(models.Model):
         return f"{self.get_folder()}/{filename}"
 
     def get_result_path(self) -> str:
-        return f"{self.get_folder()}/result{self.OutputType.get_extension()}"
+        output_type = RenderOutputType(self.OutputType)
+        print(output_type)
+        return f"{self.get_folder()}/result{output_type}"
 
     def to_headers(self) -> Dict:
         return {
@@ -106,7 +108,7 @@ class RenderTask(models.Model):
 
         return not bool(frames)  # true if set is empty
 
-    def progres_simple(self) -> Tuple[TaskStage, float, float]:  # (TaskStage, current stage progress, total progress)
+    def progress_simple(self) -> Tuple[TaskStage, float, float]:  # (TaskStage, current stage progress, total progress)
         totalProgress = self.Stage.base_progress()
 
         if (self.Stage.value >= TaskStage.Finished.value):
