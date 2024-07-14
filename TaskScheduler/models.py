@@ -101,7 +101,7 @@ class RenderTask(models.Model):
 
         return not bool(frames)  # true if set is empty
 
-    def progres_simple(self) -> Tuple[TaskStage, float, float]:  # (TaskStage, current stage progress, total progress)
+    def progress_simple(self) -> Tuple[TaskStage, float, float]:  # (TaskStage, current stage progress, total progress)
         totalProgress = self.Stage.base_progress()
 
         if (self.Stage.value >= TaskStage.Finished.value):
