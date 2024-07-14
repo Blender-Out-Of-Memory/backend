@@ -37,7 +37,9 @@ class RenderTask(models.Model):
         return f"{self.get_folder()}/{filename}"
 
     def get_result_path(self) -> str:
-        return f"{self.get_folder()}/result{self.OutputType.get_extension()}"
+        output_type = RenderOutputType(self.OutputType)
+        print(output_type)
+        return f"{self.get_folder()}/result{output_type}"
 
     def to_headers(self) -> Dict:
         return {

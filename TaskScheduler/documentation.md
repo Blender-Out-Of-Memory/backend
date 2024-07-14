@@ -110,11 +110,11 @@ This ViewSet handles API requests related to RenderTasks.
      - Failure: Returns an error message
 
 2. **Poll progress report** [TO BE DONE]
-   - URL: `/api/render-tasks/[TO BE DONE]/[TaskKey]`
+   - URL: `/api/render-tasks/id/job-progress/`
    - Method: GET
    - Description: Requests the progress for task of `TaskKey`
    - Response:
-     - Success: Progress
+     - Success: Progress as TaskStage, stageProgress and overall progress
      - Failure: Error message
 
 If progress reports finished
