@@ -3,14 +3,15 @@ from typing import Callable, List
 from http import HTTPStatus
 
 from django.db.models import Max, QuerySet
-from django.http import HttpResponse, HttpRequest
+from django.http import HttpResponse, HttpRequest, FileResponse
 
 from .models import Worker
 from .Enums import WorkerStatus
+from .Sender import Sender
 
 # Different Django app
 from TaskScheduler.models import RenderTask, Subtask
-from TaskScheduler.Enums import SubtaskStage
+from TaskScheduler.Enums import SubtaskStage, TaskStage
 
 
 def _int_to_id(value: int, prefix: str) -> str:
@@ -185,9 +186,41 @@ class WorkerManager:
 
 		subtask.save()
 
+	@staticmethod
+	def download_blender_data(request: HttpRequest):
+		# TODO: check if Worker is responsible for task
+		difference = {"Task-ID"}.difference(set(request.headers))
+		if not difference:  # difference is empty
+			return HttpResponse(f"Missing header fields: {", ".join(difference)}", status=HTTPStatus.BAD_REQUEST)
+
+		# Check TaskID
+		taskID = request.headers["Task-ID"]
+		if not _is_valid_id(taskID, "T-"):
+			return HttpResponse("Invalid TaskID", status=HTTPStatus.BAD_REQUEST)
+
+		taskID_int = _id_to_int(taskID, "T-")
+		filtered: QuerySet = RenderTask.objects.filter(TaskID_Int=taskID_int)
+		if not filtered.exists():
+			return HttpResponse("Unknown TaskID", Status=HTTPStatus.BAD_REQUEST)
+
+		task = filtered[0]
+		if (TaskStage(task.Stage) == TaskStage.Expired):
+			return HttpResponse("Stage of Task is 'Expired'. Blender data doesn't exist anymore", Status=HTTPStatus.BAD_REQUEST)
+
+		path = task.get_blender_data_path()
+		with open(path, "rb") as file:
+			response = FileResponse(file)
+
+		return response
 
 	### Called from TaskScheduler
 	@staticmethod
 	def distribute_subtasks(subtasks: List[Subtask]):
 		for subtask in subtasks:
-			pass
+			Sender.add_task(subtask)
+
+
+	### Callback for Sender
+	@staticmethod
+	def sending_failed(subtask: Subtask):
+		WorkerManager.subtaskFailedCallback(subtask)

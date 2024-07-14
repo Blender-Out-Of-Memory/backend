@@ -73,9 +73,12 @@ class Sender:
 				connection = http.client.HTTPConnection(task.Worker.Host, task.Worker.port, timeout=TIMEOUT)
 				connection.request("GET", "STARTTASK", headers=headers)
 				response = connection.getresponse()
+				connection.close()
 				if response.status == 200:
 					success = True
 				# TODO: handle other statuses
+				tries += 1
+
 			except Exception as ex:
 				print(f"Exception occurred while trying to send Subtask {task.Task.TaskID}:{task.SubtaskIndex} to Worker {task.Worker.WorkerDI}")
 				print(ex)
