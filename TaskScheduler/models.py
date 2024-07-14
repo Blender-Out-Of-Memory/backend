@@ -55,29 +55,30 @@ class RenderTask(models.Model):
         self.FinishedAt = timezone.now()
         self.save()
 
-    def progres_simple(self) -> Tuple[TaskStage, float, float]:  # (TaskStage, current stage progress, total progress)
-        totalProgress = self.Stage.base_progress()
+    def progress_simple(self) -> Tuple[TaskStage, float, float]:  # (TaskStage, current stage progress, total progress)
+        current_stage = TaskStage(self.Stage)
+        totalProgress = current_stage.base_progress()
 
-        if (self.Stage.value >= TaskStage.Finished.value):
+        if (current_stage.value >= TaskStage.Finished.value):
             currentStageProgress = 1.0
             self.update_finish()
 
-        if (self.Stage == TaskStage.Concatenating):
+        if (current_stage == TaskStage.Concatenating):
             currentStageProgress = 0.0  # to be done
 
-        if (self.Stage == TaskStage.Rendering):
+        if (current_stage == TaskStage.Rendering):
             subtasks = self.Subtask_set.all()
             currentStageProgress = 0.0
             for subtask in subtasks:
                 currentStageProgress += subtask.progress_weighted()
 
-        if (self.Stage == TaskStage.Distributing):
+        if (current_stage == TaskStage.Distributing):
             currentStageProgress = 0.0  # to be done
 
-        if (self.Stage == TaskStage.Pending):
+        if (current_stage == TaskStage.Pending):
             currentStageProgress = float("-inf")  # alternatively show progress in pending tasks queue
 
-        if (self.Stage == TaskStage.Uploading):
+        if (current_stage == TaskStage.Uploading):
             currentStageProgress = 0.0  # to be done
 
         currentStageProgress = max(1.0, currentStageProgress)
@@ -87,7 +88,7 @@ class RenderTask(models.Model):
 
     def progress_detailed(self) -> List[Tuple[float, float]]:  # array of (portion, progress)
         report = []
-        if (self.Stage == TaskStage.Rendering):
+        if (current_stage == TaskStage.Rendering):
             subtasks = self.Subtask_set.all()
             for subtask in subtasks:
                 report.append((subtask.Portion, subtask.progress()))
