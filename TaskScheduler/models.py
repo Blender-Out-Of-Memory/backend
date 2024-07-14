@@ -75,7 +75,8 @@ class RenderTask(models.Model):
 
         subtasks = self.Subtask_set.all()
         for subtask in subtasks:
-            upperLimit = subtask.EndFrame if ((subtask.Stage != SubtaskStage.Aborted)) else subtask.LastestFrame
+            stage = SubtaskStage(subtask.Stage)
+            upperLimit = subtask.EndFrame if (stage != SubtaskStage.Aborted) else subtask.LastestFrame
             for frame in range(subtask.StartFrame, upperLimit, self.FrameStep):
                 frames[frames.index(frame)] = -1
 
@@ -99,10 +100,11 @@ class RenderTask(models.Model):
 
         subtasks = self.Subtask_set.all()
         for subtask in subtasks:
-            if subtask.Stage not in (SubtaskStage.Aborted, SubtaskStage.Finished):
+            stage = SubtaskStage(subtask.Stage)
+            if stage not in (SubtaskStage.Aborted, SubtaskStage.Finished):
                 continue
 
-            upperLimit = subtask.EndFrame if ((subtask.Stage != SubtaskStage.Aborted)) else subtask.LastestFrame
+            upperLimit = subtask.EndFrame if ((stage != SubtaskStage.Aborted)) else subtask.LastestFrame
             for frame in range(subtask.StartFrame, upperLimit, self.FrameStep):
                 frames = frames - {frame}
 
