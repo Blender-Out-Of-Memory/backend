@@ -32,7 +32,7 @@ class RenderTaskViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'])
     def run_task(self, request: HttpRequest):
-        taskInfo = TaskScheduler.init_new_task()
+        taskInfo = TaskScheduler.init_new_task(request.user)
         if not taskInfo:
             return Response({'error': 'Failed to initialize new task'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         taskID, filePath = taskInfo

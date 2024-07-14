@@ -14,7 +14,7 @@ class TaskScheduler:
     idCounter: int = 0  # provisional solution
 
     @staticmethod
-    def init_new_task() -> Optional[Tuple[str, str]]:  # call before upload to get path to save blend file to
+    def init_new_task(user) -> Optional[Tuple[str, str]]:  # call before upload to get path to save blend file to
         if (RenderTask.objects.filter(TaskID_Int=TaskScheduler.idCounter).exists()):
             TaskScheduler.idCounter = RenderTask.objects.aggregate(Max('TaskID_Int'))['TaskID_Int__max'] + 1
 
@@ -30,7 +30,7 @@ class TaskScheduler:
         task = None
         while (tries < MAX_TRIES and task is None):
             taskID = _int_to_id(TaskScheduler.idCounter, "T-")  # provisional solution
-            task = RenderTask.create(TaskScheduler.idCounter, taskID, fileServerAddress, fileServerPort, blenderDataType)
+            task = RenderTask.create(TaskScheduler.idCounter, taskID, fileServerAddress, fileServerPort, blenderDataType, user)
             TaskScheduler.idCounter += 1
 
         return None if (task is None) else (task.TaskID, task.get_blender_data_path())

@@ -96,7 +96,7 @@ class RenderTask(models.Model):
 
 
     @classmethod
-    def create(cls, taskID_int: int, taskID: str, fileServerAddress: str, fileServerPort: int, dataType: BlenderDataType):
+    def create(cls, taskID_int: int, taskID: str, fileServerAddress: str, fileServerPort: int, dataType: BlenderDataType, user: User):
         task_folder = f"tasks/{taskID}"
 
         try:
@@ -113,7 +113,7 @@ class RenderTask(models.Model):
             print("ERROR: Failed to create new folder for new task")
             return None
 
-        instance = cls(TaskID_Int=taskID_int, TaskID=taskID, FileServerAddress=fileServerAddress, FileServerPort=fileServerPort, DataType=dataType, Stage=TaskStage.Uploading)
+        instance = cls(TaskID_Int=taskID_int, TaskID=taskID, FileServerAddress=fileServerAddress, FileServerPort=fileServerPort, DataType=dataType, Stage=TaskStage.Uploading, created_by=user)
         instance.save()
         return instance
 
