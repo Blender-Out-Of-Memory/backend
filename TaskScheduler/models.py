@@ -168,7 +168,7 @@ class RenderTask(models.Model):
             print("ERROR: Failed to create new folder for new task")
             return None
 
-        instance = cls(TaskID_Int=taskID_int, TaskID=taskID, FileServerAddress=fileServerAddress, FileServerPort=fileServerPort, DataType=dataType, Stage=TaskStage.Uploading, created_by=user)
+        instance = cls(TaskID_Int=taskID_int, TaskID=taskID, FileServerAddress=fileServerAddress, FileServerPort=fileServerPort, DataType=dataType, Stage=TaskStage.Uploading, CreatedBy=user)
         instance.save()
         return instance
 

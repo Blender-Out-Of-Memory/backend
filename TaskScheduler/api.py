@@ -23,10 +23,10 @@ class RenderTaskViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
+        serializer.save(CreatedBy=self.request.user)
 
     def get_queryset(self):
-        return RenderTask.objects.filter(created_by=self.request.user)
+        return RenderTask.objects.filter(CreatedBy=self.request.user)
 
     def get_permissions(self):
         if self.action in ["retrieve", "update", "partial_update", "destroy"]:
