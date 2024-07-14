@@ -1,10 +1,12 @@
 from typing import Optional, Tuple
 from django.db.models import Max
 
-from .models import RenderTask, BlenderDataType
+from .models import RenderTask, Subtask, BlenderDataType
+from .Enums import TaskStage
 # from WorkerManager.WorkerManager import WorkerManager
 
 
+# Duplicate in WorkerManager/WorkerManager.py
 def _int_to_id(value: int, prefix: str) -> str:
     hex_string = format(value, 'x')
     hex_string = hex_string.zfill(16)
@@ -15,6 +17,8 @@ def _int_to_id(value: int, prefix: str) -> str:
 class TaskScheduler:
     idCounter: int = 0  # provisional solution
 
+
+    ### Methods for API
     @staticmethod
     def init_new_task() -> Optional[Tuple[str, str]]:  # call before upload to get path to save blend file to
         if (RenderTask.objects.filter(TaskID_Int=TaskScheduler.idCounter).exists()):
@@ -46,3 +50,21 @@ class TaskScheduler:
             return False
 
         return task.complete()
+
+
+    ### Methods for WorkerManager (Callbacks)
+    @staticmethod
+    def distribute_tasks():
+        pass
+
+    @staticmethod
+    def subtask_finished(task: RenderTask):
+        if (task.is_finished()):
+            task.Stage = TaskStage.Finished
+            task.save()
+            # TODO: set metadata: e.g. time finished
+
+    @staticmethod
+    def subtask_failed(subtask: Subtask):
+        pass
+

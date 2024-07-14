@@ -22,5 +22,6 @@ class RenderTaskViewSet(viewsets.ModelViewSet):
 
         success = TaskScheduler.run_task(taskID)
         if success:
-            return Response({'message': 'Task started successfully'})
-        return Response({'error': 'Failed to start task'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({'Task-ID': taskID}, status=status.HTTP_200_OK)
+
+        return Response({'Error': 'Failed to start task'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

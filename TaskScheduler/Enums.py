@@ -97,3 +97,11 @@ class TaskStage(models.TextChoices):
 
     def base_progress(self):
         return max(int(self.value[0][0]) / 5, 1.0)
+
+
+class SubtaskStage(models.TextChoices):
+    Pending     = ("1-PEN", "Pending")
+    Running     = ("2-RUN", "Running")
+    Finished    = ("3-FIN", "Finished")
+    Aborted     = ("4-ABO", "Aborted")
+
