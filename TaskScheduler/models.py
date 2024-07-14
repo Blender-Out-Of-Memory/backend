@@ -112,7 +112,7 @@ class RenderTask(models.Model):
         current_stage = TaskStage(self.Stage)
         totalProgress = current_stage.base_progress()
 
-        if (current_stage.as_number() >= current_stage.as_number()):
+        if (current_stage.as_number() >= TaskStage.Finished.as_number()):
             currentStageProgress = 1.0
 
         if (current_stage == TaskStage.Concatenating):
@@ -140,7 +140,7 @@ class RenderTask(models.Model):
 
     def progress_detailed(self) -> List[Tuple[float, float]]:  # array of (portion, progress)
         report = []
-        if (current_stage == TaskStage.Rendering):
+        if (TaskStage(self.Stage) == TaskStage.Rendering):
             subtasks = self.Subtask_set.all()
             for subtask in subtasks:
                 report.append((subtask.Portion, subtask.progress()))
@@ -178,9 +178,11 @@ class RenderTask(models.Model):
         self.StartFrame = scene.StartFrame
         self.EndFrame   = scene.EndFrame
         self.FrameStep  = scene.FrameStep
-        current_stage      = TaskStage.Pending
+        self.Stage      = TaskStage.Pending
 
         self.OutputType = RenderOutputType.from_scene(scene)
+
+        self.save()
 
         return True
 
