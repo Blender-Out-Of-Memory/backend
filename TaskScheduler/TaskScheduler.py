@@ -3,7 +3,9 @@ from django.db.models import Max
 
 from .models import RenderTask, Subtask, BlenderDataType
 from .Enums import TaskStage
-# from WorkerManager.WorkerManager import WorkerManager
+from WorkerManager.WorkerManager import WorkerManager
+from WorkerManager.models import Worker
+from WorkerManager.Enums import WorkerStatus
 
 
 # Duplicate in WorkerManager/WorkerManager.py
@@ -49,14 +51,26 @@ class TaskScheduler:
             print(f"ERROR: Run task was called on unknown task_id: {task_id}")
             return False
 
-        return task.complete()
+        created = task.complete()
+        TaskScheduler.distribute_tasks(task)
+        return created
+
+    @staticmethod
+    def distribute_tasks(task: RenderTask):
+        workers = Worker.objects.filter(Status=WorkerStatus.Available)
+        if not workers.exists():
+            return
+
+        subtasks = [Subtask(SubtaskIndex=0, Task=task,
+                           Worker=workers[0],
+                           StartFrame=task.StartFrame,
+                           EndFrame=task.EndFrame,
+                           Portion=1)]
+
+        WorkerManager.distribute_subtasks(subtasks)
 
 
     ### Methods for WorkerManager (Callbacks)
-    @staticmethod
-    def distribute_tasks():
-        pass
-
     @staticmethod
     def subtask_finished(task: RenderTask):
         if (task.is_finished()):

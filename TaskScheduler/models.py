@@ -11,7 +11,7 @@ from .BlendFile import BlendFile
 from .Enums import BlenderDataType, RenderOutputType, TaskStage, SubtaskStage
 
 # Different Django app
-# from WorkerManager.models import Worker  # must be path from perspective of folder manage.py lies in
+from WorkerManager.models import Worker  # must be path from perspective of folder manage.py lies in
 # -> different approach: pass class name to foreign key fields
 
 class RenderTask(models.Model):
@@ -203,7 +203,7 @@ class Subtask(models.Model):
 
     def to_headers(self) -> Dict:
         return {
-            "Task-ID":              self.Task.TaskID,
+            "Task-Id":              self.Task.TaskID,
             "Subtask-Index":        self.SubtaskIndex,
             "File-Server-Address":  self.Task.FileServerAddress,
             "File-Server-Port":     self.Task.FileServerPort,

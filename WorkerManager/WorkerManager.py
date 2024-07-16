@@ -55,19 +55,20 @@ class WorkerManager:
 		WorkerManager.subtaskFinishedCallback = subtaskFinishedCb
 		WorkerManager.subtaskFailedCallback = subtaskFailedCb
 
-
-
 	@staticmethod
 	def register(request: HttpRequest) -> HttpResponse:
-		difference = {"Worker-ID", "Host", "Port", "Performance-Score"}.difference(request.headers)
-		if not difference:  # difference is empty
-			return HttpResponse(f"Missing header fields for registration: {", ".join(difference)}", status=HTTPStatus.BAD_REQUEST)
+		difference = {"Worker-Id", "Host", "Port", "Performance-Score"}.difference(request.headers)
+		print(difference)
+		if difference:  # difference is not empty -> header fields missing
+			print("Difference not empty, sending response")
+			return HttpResponse(f"Missing header fields for registration: {", ".join(difference)}".encode("utf-8"), content_type="text/plain", status=HTTPStatus.BAD_REQUEST)
 
-		workerID = request.headers["Worker-ID"]
+		workerID = request.headers["Worker-Id"]
 
 		if not _is_valid_id(workerID, "W-"):
 			print(f"Invalid Worker ID: {workerID}")
-			WorkerManager.idCounter = Worker.objects.aggregate(Max('WorkerID_Int'))['WorkerID_Int__max'] + 1
+			max = Worker.objects.aggregate(Max("WorkerID_Int"))["WorkerID_Int__max"]
+			WorkerManager.idCounter = 0 if (max is None) else max + 1
 			workerID = _int_to_id(WorkerManager.idCounter, "W-")
 			workerID_int = WorkerManager.idCounter
 
@@ -96,15 +97,15 @@ class WorkerManager:
 		Worker(WorkerID_Int=workerID_int, WorkerID=workerID, Host=host, Port=port, PerformanceScore=score, Status=WorkerStatus.Available).save()
 		WorkerManager.freeWorkerCallback()
 
-		return HttpResponse("Registered worker successfully", status=HTTPStatus.OK, headers={"Worker-ID": workerID})
+		return HttpResponse("Registered worker successfully", status=HTTPStatus.OK, headers={"Worker-Id": workerID})
 
 	@staticmethod
 	def unregister(request: HttpRequest) -> HttpResponse:
-		difference = {"Worker-ID"}.difference(request.headers)  # TODO (later): add some kind of authentication key
-		if not difference:  # difference is empty
+		difference = {"Worker-Id"}.difference(request.headers)  # TODO (later): add some kind of authentication key
+		if difference:  # difference is not empty -> header fields missing
 			return HttpResponse(f"Missing header fields for unregistration: {", ".join(difference)}", status=HTTPStatus.BAD_REQUEST)
 
-		workerID = request.headers["Worker-ID"]
+		workerID = request.headers["Worker-Id"]
 		if not _is_valid_id(workerID, "W-"):
 			return HttpResponse("Invalid WorkerID", status=HTTPStatus.BAD_REQUEST)
 
@@ -125,12 +126,12 @@ class WorkerManager:
 
 	@staticmethod
 	def receive_result(request: HttpRequest):
-		difference = {"Worker-ID", "Task-ID", "Subtask-Index", "Frame"}.difference(set(request.headers))
-		if not difference:  # difference is empty
+		difference = {"Worker-Id", "Task-Id", "Subtask-Index", "Frame"}.difference(set(request.headers))
+		if difference:  # difference is not empty -> header fields missing
 			return HttpResponse(f"Missing header fields: {", ".join(difference)}", status=HTTPStatus.BAD_REQUEST)
 
 		# Check WorkerID
-		workerID = request.headers["Worker-ID"]
+		workerID = request.headers["Worker-Id"]
 		if not _is_valid_id(workerID, "W-"):
 			return HttpResponse("Invalid WorkerID", status=HTTPStatus.BAD_REQUEST)
 
@@ -140,7 +141,7 @@ class WorkerManager:
 			return HttpResponse("Unknown WorkerID", Status=HTTPStatus.BAD_REQUEST)
 
 		# Check TaskID
-		taskID = request.headers["Task-ID"]
+		taskID = request.headers["Task-Id"]
 		if not _is_valid_id(taskID, "T-"):
 			return HttpResponse("Invalid TaskID", status=HTTPStatus.BAD_REQUEST)
 
@@ -189,12 +190,12 @@ class WorkerManager:
 	@staticmethod
 	def download_blender_data(request: HttpRequest):
 		# TODO: check if Worker is responsible for task
-		difference = {"Task-ID"}.difference(set(request.headers))
-		if not difference:  # difference is empty
+		difference = {"Task-Id"}.difference(set(request.headers))
+		if difference:  # difference is not empty -> header fields missing
 			return HttpResponse(f"Missing header fields: {", ".join(difference)}", status=HTTPStatus.BAD_REQUEST)
 
 		# Check TaskID
-		taskID = request.headers["Task-ID"]
+		taskID = request.headers["Task-Id"]
 		if not _is_valid_id(taskID, "T-"):
 			return HttpResponse("Invalid TaskID", status=HTTPStatus.BAD_REQUEST)
 
