@@ -46,9 +46,8 @@ class RenderTask(models.Model):
         return f"{self.get_folder()}/{filename}"
 
     def get_result_path(self) -> str:
-        output_type = RenderOutputType(self.OutputType)
-        print(output_type)
-        return f"{self.get_folder()}/result{output_type}"
+        extension = ".zip" if (BlenderDataType(self.DataType) == BlenderDataType.SingleFile) else RenderOutputType(self.OutputType).get_extension()
+        return f"{self.get_folder()}/output{extension}"
 
 
     def get_all_frames(self) -> List[int]:

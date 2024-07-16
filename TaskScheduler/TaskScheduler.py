@@ -3,6 +3,7 @@ from django.db.models import Max
 
 from .models import RenderTask, Subtask, BlenderDataType, SubtaskStage
 from .Enums import TaskStage
+from .ConcatManager import ConcatManager
 from WorkerManager.WorkerManager import WorkerManager
 from WorkerManager.models import Worker
 from WorkerManager.Enums import WorkerStatus
@@ -95,12 +96,15 @@ class TaskScheduler:
     ### Methods for WorkerManager (Callbacks)
     @staticmethod
     def subtask_finished(task: RenderTask):
-        if (task.is_finished()):
-            task.Stage = TaskStage.Finished
-            task.save()
-            # TODO: set metadata: e.g. time finished
+        if not task.is_finished():
+            return
+
+        print(f"Task {task.TaskID} rendering finished")
+        task.Stage = TaskStage.Concatenating
+        task.save()
+
+        ConcatManager.add_task(task)
 
     @staticmethod
     def subtask_failed(subtask: Subtask):
         pass
-
