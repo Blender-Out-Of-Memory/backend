@@ -1,7 +1,7 @@
 from typing import Optional, Tuple
 from django.db.models import Max
 
-from .models import RenderTask, Subtask, BlenderDataType
+from .models import RenderTask, Subtask, BlenderDataType, SubtaskStage
 from .Enums import TaskStage
 from WorkerManager.WorkerManager import WorkerManager
 from WorkerManager.models import Worker
@@ -52,20 +52,42 @@ class TaskScheduler:
             return False
 
         created = task.complete()
-        TaskScheduler.distribute_tasks(task)
+        TaskScheduler.distribute_tasks()
         return created
 
     @staticmethod
-    def distribute_tasks(task: RenderTask):
+    def distribute_tasks():
+        print("Called distribute")
         workers = Worker.objects.filter(Status=WorkerStatus.Available)
         if not workers.exists():
+            print("No workers available")
             return
 
-        subtasks = [Subtask(SubtaskIndex=0, Task=task,
-                           Worker=workers[0],
-                           StartFrame=task.StartFrame,
-                           EndFrame=task.EndFrame,
-                           Portion=1)]
+        subtasks = []
+        resourcesLeft = True
+        # First check if there are Subtasks that failed and must be reassigned
+        pendingSubtasks = Subtask.objects.filter(Stage=SubtaskStage.Pending)
+        if (pendingSubtasks.exists()):
+            # TODO: better distribution
+            subtasksList = list(pendingSubtasks)
+            subtask = Subtask(SubtaskIndex=0, Task=subtasksList[0].Task, Worker=workers[0],
+                              StartFrame=subtasksList[0].StartFrame, EndFrame=subtasksList[0].EndFrame,
+                              Portion=1)
+            subtask.save()
+            subtasks.append(subtask)
+
+            resourcesLeft = False
+
+        if (resourcesLeft):
+            tasks = RenderTask.objects.filter(Stage=TaskStage.Pending)
+            if (tasks.exists()):
+                subtask = Subtask(SubtaskIndex=0, Task=tasks[0], Worker=workers[0],
+                                  StartFrame=tasks[0].StartFrame, EndFrame=tasks[0].EndFrame,
+                                  Portion=1)
+                subtask.save()
+                subtasks.append(subtask)
+                tasks[0].Stage = TaskStage.Distributing
+                # task[0].save()
 
         WorkerManager.distribute_subtasks(subtasks)
 

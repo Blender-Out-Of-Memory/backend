@@ -11,7 +11,7 @@ from .Sender import Sender
 
 # Different Django app
 from TaskScheduler.models import RenderTask, Subtask
-from TaskScheduler.Enums import SubtaskStage, TaskStage
+from TaskScheduler.Enums import SubtaskStage, TaskStage, RenderOutputType
 
 
 def _int_to_id(value: int, prefix: str) -> str:
@@ -26,7 +26,7 @@ def _id_to_int(value: str, prefix: str) -> int:
 	return int(hex_string, 16)
 
 def _is_valid_id(id: str, prefix: str) -> bool:
-	pattern = prefix + r"{prefix}[0-9a-fA-F]{4}_[0-9a-fA-F]{4}_[0-9a-fA-F]{4}_[0-9a-fA-F]{4}"
+	pattern = prefix + r"[0-9a-fA-F]{4}_[0-9a-fA-F]{4}_[0-9a-fA-F]{4}_[0-9a-fA-F]{4}"
 	return re.fullmatch(pattern, id) is not None
 
 
@@ -58,9 +58,7 @@ class WorkerManager:
 	@staticmethod
 	def register(request: HttpRequest) -> HttpResponse:
 		difference = {"Worker-Id", "Host", "Port", "Performance-Score"}.difference(request.headers)
-		print(difference)
 		if difference:  # difference is not empty -> header fields missing
-			print("Difference not empty, sending response")
 			return HttpResponse(f"Missing header fields for registration: {", ".join(difference)}".encode("utf-8"), content_type="text/plain", status=HTTPStatus.BAD_REQUEST)
 
 		workerID = request.headers["Worker-Id"]
@@ -174,8 +172,8 @@ class WorkerManager:
 			return HttpResponse(f"Got unexpected frame {frame}", status=HTTPStatus.BAD_REQUEST)  # other HTTPStatus: not responsible
 			# TODO: Check if Worker runs with wrong task
 
-
-		filepath = f"{task.get_folder()}{str(frame)}{task.OutputType.get_extension()}"
+		outputType = RenderOutputType(task.OutputType)
+		filepath = f"{task.get_folder()}/{str(frame).zfill(len(str(task.EndFrame)))}{outputType.get_extension()}"
 		with open(filepath, 'wb') as file:
 			file.write(request.body)
 
@@ -186,6 +184,8 @@ class WorkerManager:
 			WorkerManager.subtaskFinishedCallback(task)
 
 		subtask.save()
+
+		return HttpResponse("Accepted frame", status=HTTPStatus.OK)
 
 	@staticmethod
 	def download_blender_data(request: HttpRequest):
@@ -209,8 +209,7 @@ class WorkerManager:
 			return HttpResponse("Stage of Task is 'Expired'. Blender data doesn't exist anymore", Status=HTTPStatus.BAD_REQUEST)
 
 		path = task.get_blender_data_path()
-		with open(path, "rb") as file:
-			response = FileResponse(file)
+		response = FileResponse(open(path, "rb"))
 
 		return response
 

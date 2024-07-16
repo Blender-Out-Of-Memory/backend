@@ -12,11 +12,21 @@ MAX_RETRIES = 5
 TIMEOUT = 5  # seconds
 MANAGER_THREAD_SLEEP_TIME = 0.5 # seconds
 
+class ThreadJob:
+	Thread: Thread
+	Subtask: Subtask
+	Done: bool
+
+	def __init__(self, thread: Thread, subtask: Subtask):
+		self.Thread = thread
+		self.Subtask = subtask
+		self.Done = False
+
 
 class Sender:
 	taskQueue: queue = queue.Queue()
 	canceledTasks: Set = set()
-	threads: List[Tuple[Thread, Subtask, bool]] = [(Thread(), None, True) for i in range(MAX_SENDER_THREADS)]
+	threads: List[ThreadJob] = [ThreadJob(Thread(), None) for i in range(MAX_SENDER_THREADS)]
 	sendingFailedCallback: Callable[[Subtask], None] = None
 
 	managerThread = None
@@ -34,12 +44,12 @@ class Sender:
 			time.sleep(0.5)
 
 			for i in range(MAX_SENDER_THREADS):
-				if (Sender.threads[i][0].is_alive()):
+				if (Sender.threads[i].Thread.is_alive()):
 					continue
 
-				if (Sender.threads[i][2] is False):  # failed
-					Sender.sendingFailedCallback(Sender.threads[i][1])
-					Sender.threads[i][2] = True  # so it isn't handled twice if there is no new Subtask that replaces the current one
+				if Sender.threads[i].Done is False:  # failed
+					Sender.sendingFailedCallback(Sender.threads[i].Subtask)
+					Sender.threads[i].Done = True  # so it isn't handled twice if there is no new Subtask that replaces the current one
 
 				# both True and False in Sender.threads[i][2]
 				if (Sender.taskQueue.empty()):
@@ -52,7 +62,7 @@ class Sender:
 
 				newThread = Thread(target=Sender.send, args=(task, i))
 				newThread.start()
-				Sender.threads[i] = (newThread, task, False)
+				Sender.threads[i] = ThreadJob(newThread, task)
 
 
 	@staticmethod
@@ -70,7 +80,7 @@ class Sender:
 		while not success and tries < MAX_RETRIES:
 			try:
 				headers = task.to_headers()
-				connection = http.client.HTTPConnection(task.Worker.Host, task.Worker.port, timeout=TIMEOUT)
+				connection = http.client.HTTPConnection(task.Worker.Host, task.Worker.Port, timeout=TIMEOUT)
 				connection.request("GET", "STARTTASK", headers=headers)
 				response = connection.getresponse()
 				connection.close()
@@ -80,7 +90,7 @@ class Sender:
 				tries += 1
 
 			except Exception as ex:
-				print(f"Exception occurred while trying to send Subtask {task.Task.TaskID}:{task.SubtaskIndex} to Worker {task.Worker.WorkerDI}")
+				print(f"Exception occurred while trying to send Subtask {task.Task.TaskID}:{task.SubtaskIndex} to Worker {task.Worker.WorkerID}")
 				print(ex)
 
-		Sender.threads[threadIndex][2] = success
+		Sender.threads[threadIndex].Done = success

@@ -8,4 +8,11 @@ class WorkermanagerConfig(AppConfig):
     def ready(self):
         from .WorkerManager import WorkerManager
         from .Sender import Sender
+        from .models import Worker
+        from .Enums import WorkerStatus
         Sender.set_callbacks(WorkerManager.sending_failed)
+
+        for worker in Worker.objects.all():
+            worker.Status = WorkerStatus.Disconnected
+            worker.save()
+

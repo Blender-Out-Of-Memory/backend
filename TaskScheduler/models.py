@@ -186,11 +186,11 @@ class RenderTask(models.Model):
 
 class Subtask(models.Model):
     SubtaskIndex    = models.PositiveBigIntegerField(primary_key=True)
-    Task            = models.ForeignKey(RenderTask, on_delete=models.CASCADE, related_name="Subtasks")  # is CASCADE right ??
+    Task            = models.ForeignKey(RenderTask, on_delete=models.CASCADE, related_name="Subtask_set")  # is CASCADE right ??
     Worker          = models.ForeignKey("WorkerManager.Worker", on_delete=models.CASCADE)           # is CASCADE right ??
     StartFrame      = models.PositiveIntegerField()
     EndFrame        = models.PositiveIntegerField()
-    LastestFrame    = models.PositiveIntegerField()
+    LastestFrame    = models.PositiveIntegerField(null=True)
     Portion         = models.FloatField()   # Portion of entire Task, relevant for total progres
                                             # Alternatively recalculate it each time in super task
                                             # TODO: change if Subtask completes partially only

@@ -38,10 +38,10 @@ class RenderOutputType(models.TextChoices):
 
     def get_extension(self):
         # get index of second dot if exists
-        additionalIndex = self.value[0].find(".", 1)
-        end = additionalIndex if (additionalIndex != -1) else len(self.value[0])
+        additionalIndex = self.value.find(".", 1)
+        end = additionalIndex if (additionalIndex != -1) else len(self.value)
         # chars after additionalIndex don't belong to extension
-        return self.value[0][0:end]
+        return self.value[0:end]
 
     @staticmethod
     def from_scene(scene: BlendFileScene) -> RenderOutputType:
