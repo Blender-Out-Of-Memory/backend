@@ -139,24 +139,13 @@ lightweight ist, aber dann PostgreSQL in der Produktion zu benutzen.
 Hier wird anhand der Environment Variablen entschieden, welches in 
 der aktuellen Umgebung benutzt werden soll.
 """
-if env("DJANGO_ENV") == "production":
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': 'boomdatabase',
-            'USER': 'boomuser',
-            'PASSWORD': 'password',
-            'HOST': 'db',
-            'PORT': '5432',
-        }
+
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
     }
-else:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-        }
-    }
+}
 
 
 # Password validation
