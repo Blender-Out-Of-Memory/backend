@@ -1,5 +1,6 @@
 import os
 import subprocess
+import time
 from threading import Thread
 from queue import Queue
 from typing import List, Tuple
@@ -35,6 +36,7 @@ class ConcatManager:
 	def assign_tasks():
 		while True:
 			for i in range(MAX_CONCAT_THREADS):
+				time.sleep(0.5)
 				if (ConcatManager.threads[i].Thread.is_alive()):
 					continue
 
@@ -42,8 +44,12 @@ class ConcatManager:
 					# TODO: callback if failed
 					ConcatManager.threads[i].Done = True  # so it isn't handled twice if there is no new Subtask that replaces the current one
 
-				task = ConcatManager.queue.get()
+				try:
+					task = ConcatManager.queue.get_nowait()
+				except:
+					continue
 
+				print("Awakening")
 				newThread = Thread(target=ConcatManager.concatenate, args=(task, i))
 				newThread.start()
 				ConcatManager.threads[i] = ThreadJob(newThread, task)
@@ -54,7 +60,9 @@ class ConcatManager:
 		directory = task.get_folder()
 		inputFormat = RenderOutputType(task.OutputType).get_extension()
 		inputFormats = [inputFormat]
-		outputFormat = "zip" if (BlenderDataType(task.DataType) == BlenderDataType.SingleFile) else inputFormat.lstrip(".")
+
+		outputType = RenderOutputType(task.OutputType)
+		outputFormat = inputFormat.lstrip(".") if (outputType.is_video()) else "zip"
 		fps = 30  # TODO: add option for user to concatenate images to video and ask for frame rate
 
 		result = ConcatManager.process_media(directory, inputFormats, outputFormat, fps)

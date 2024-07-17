@@ -46,7 +46,8 @@ class RenderTask(models.Model):
         return f"{self.get_folder()}/{filename}"
 
     def get_result_path(self) -> str:
-        extension = ".zip" if (BlenderDataType(self.DataType) == BlenderDataType.SingleFile) else RenderOutputType(self.OutputType).get_extension()
+        outputType = RenderOutputType(self.OutputType)
+        extension = outputType.get_extension() if (outputType.is_video()) else ".zip"
         return f"{self.get_folder()}/output{extension}"
 
 
@@ -186,7 +187,7 @@ class RenderTask(models.Model):
 class Subtask(models.Model):
     SubtaskIndex    = models.PositiveBigIntegerField(primary_key=True)
     Task            = models.ForeignKey(RenderTask, on_delete=models.CASCADE, related_name="Subtask_set")  # is CASCADE right ??
-    Worker          = models.ForeignKey("WorkerManager.Worker", on_delete=models.CASCADE)           # is CASCADE right ??
+    Worker          = models.ForeignKey(Worker, on_delete=models.CASCADE)           # is CASCADE right ??
     StartFrame      = models.PositiveIntegerField()
     EndFrame        = models.PositiveIntegerField()
     LastestFrame    = models.PositiveIntegerField(null=True)

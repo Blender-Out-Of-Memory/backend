@@ -181,6 +181,7 @@ class WorkerManager:
 
 		if (frame == subtask.EndFrame):
 			subtask.Stage = SubtaskStage.Finished
+			subtask.save()
 			WorkerManager.subtaskFinishedCallback(task)
 
 		subtask.save()
@@ -200,7 +201,7 @@ class WorkerManager:
 			return HttpResponse("Invalid TaskID", status=HTTPStatus.BAD_REQUEST)
 
 		taskID_int = _id_to_int(taskID, "T-")
-		filtered: QuerySet = RenderTask.objects.filter(TaskID_Int=taskID_int)
+		filtered = RenderTask.objects.filter(TaskID_Int=taskID_int)
 		if not filtered.exists():
 			return HttpResponse("Unknown TaskID", Status=HTTPStatus.BAD_REQUEST)
 
@@ -210,6 +211,9 @@ class WorkerManager:
 
 		path = task.get_blender_data_path()
 		response = FileResponse(open(path, "rb"))
+
+		task.Stage = SubtaskStage.Running
+		task.save()
 
 		return response
 

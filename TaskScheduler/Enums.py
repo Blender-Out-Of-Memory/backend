@@ -6,6 +6,7 @@ from .BlendFile import ImageType as BlendFileImageType
 from .BlendFile import Scene as BlendFileScene
 
 class RenderOutputType(models.TextChoices):
+    ## Images
     RGB = (".rgb", "Iris")
     JPG = (".jpg", "JPEG")
     JP2 = (".jp2", "JPEG 200 J2")
@@ -21,6 +22,8 @@ class RenderOutputType(models.TextChoices):
     HDR = (".hdr", "Radiance HDR")
     TIF = (".tif", "TIFF")
     WBP = (".webp", "WebP")
+
+    ## Video
     AVJ = (".avi.j", "AVI JPEG")
     AVR = (".avi.r", "AVI RAW")
 
@@ -42,6 +45,14 @@ class RenderOutputType(models.TextChoices):
         end = additionalIndex if (additionalIndex != -1) else len(self.value)
         # chars after additionalIndex don't belong to extension
         return self.value[0:end]
+
+    def is_video(self):
+        return self in {
+            RenderOutputType.AVJ, RenderOutputType.AVR, RenderOutputType.MPG,
+            RenderOutputType.DVD, RenderOutputType.MP4, RenderOutputType.AVI,
+            RenderOutputType.QKT, RenderOutputType.DV,  RenderOutputType.FLV,
+            RenderOutputType.MKV, RenderOutputType.OGG, RenderOutputType.WBM,
+        }
 
     @staticmethod
     def from_scene(scene: BlendFileScene) -> RenderOutputType:
