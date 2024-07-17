@@ -51,6 +51,8 @@ entsprechenden .env File geladen.
 """
 # DEBUG = env("DEBUG")
 DEBUG = True
+DATA_UPLOAD_MAX_MEMORY_SIZE = 262144000
+FILE_UPLOAD_MAX_MEMORY_SIZE = 262144000
 
 """
 Aus Sicherheitsgründen sollen nicht beliebige Anfragen akzeptiert
@@ -89,7 +91,10 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
+    "user",
+    "rest_framework.authtoken",
     "corsheaders",
+    "WorkerManager",
     "TaskScheduler"
 ]
 
@@ -156,6 +161,11 @@ else:
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
+REST_FRAMEWORK = {
+        'DEFAULT_AUTHENTICATION_CLASSES': [
+            'rest_framework.authentication.TokenAuthentication',
+            ]
+        }
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -178,7 +188,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "de-de"
 
-TIME_ZONE = "UTC"
+TIME_ZONE = "Europe/Berlin"
 
 USE_I18N = True
 
