@@ -72,7 +72,7 @@ class ConcatManager:
 		# alle zusammenzufügende/ zu zippende files nach Name geordnet rein ins array
 		files = [f for f in os.listdir(directory) if any(f.endswith(ext) for ext in input_formats)]
 		if not files:
-			return (f"Didn't find any files with the specified input formats: {", ".join(input_formats)}", False)
+			return (f"Didn't find any files with the specified input formats: {', '.join(input_formats)}", False)
 
 		output_file = os.path.join(directory, "output." + output_format)
 
