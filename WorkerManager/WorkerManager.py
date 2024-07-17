@@ -212,7 +212,7 @@ class WorkerManager:
 		path = task.get_blender_data_path()
 		response = FileResponse(open(path, "rb"))
 
-		task.Stage = SubtaskStage.Running
+		task.Stage = TaskStage.Rendering
 		task.save()
 
 		return response
