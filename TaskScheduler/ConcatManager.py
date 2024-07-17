@@ -1,6 +1,5 @@
 import os
 import subprocess
-import time
 from threading import Thread
 from queue import Queue
 from typing import List, Tuple
@@ -36,7 +35,6 @@ class ConcatManager:
 	def assign_tasks():
 		while True:
 			for i in range(MAX_CONCAT_THREADS):
-				time.sleep(0.5)
 				if (ConcatManager.threads[i].Thread.is_alive()):
 					continue
 
@@ -44,12 +42,8 @@ class ConcatManager:
 					# TODO: callback if failed
 					ConcatManager.threads[i].Done = True  # so it isn't handled twice if there is no new Subtask that replaces the current one
 
-				try:
-					task = ConcatManager.queue.get_nowait()
-				except:
-					continue
+				task = ConcatManager.queue.get()
 
-				print("Awakening")
 				newThread = Thread(target=ConcatManager.concatenate, args=(task, i))
 				newThread.start()
 				ConcatManager.threads[i] = ThreadJob(newThread, task)
@@ -69,6 +63,8 @@ class ConcatManager:
 		success = result[1]
 		if success:
 			task.Stage = TaskStage.Finished
+			task.save()
+			print("Concatenation succeeded")
 		else:
 			print(result[0])
 
