@@ -1,4 +1,4 @@
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List
 from django.db.models import Max
 
 from .models import RenderTask, Subtask, BlenderDataType, SubtaskStage
@@ -20,6 +20,8 @@ def _int_to_id(value: int, prefix: str) -> str:
 class TaskScheduler:
 	idCounter: int = 0  # provisional solution
 
+	uploadingTasks: List[RenderTask] = []
+
 
 	### Methods for API
 	@staticmethod
@@ -40,6 +42,7 @@ class TaskScheduler:
 		while (tries < MAX_TRIES and task is None):
 			taskID = _int_to_id(TaskScheduler.idCounter, "T-")  # provisional solution
 			task = RenderTask.create(TaskScheduler.idCounter, taskID, fileServerAddress, fileServerPort, blenderDataType, user)
+			TaskScheduler.uploadingTasks.append(task)
 			TaskScheduler.idCounter += 1
 
 		return None if (task is None) else (task.TaskID, task.get_blender_data_path())
@@ -47,13 +50,18 @@ class TaskScheduler:
 	@staticmethod
 	def run_task(task_id: str) -> bool:  # call after upload
 		try:
-			task = RenderTask.objects.get(TaskID=task_id)
+			tasks = list(filter(lambda t: t.TaskID == task_id, TaskScheduler.uploadingTasks))
+			if (len(tasks) == 0 or len(tasks) > 1):
+				raise ValueError(f"Found {len(tasks)} occurrences of TaskID {task_id} in uploading tasks list")
 		except:
 			print(f"ERROR: Run task was called on unknown task_id: {task_id}")
 			return False
 
-		created = task.complete()
-		TaskScheduler.distribute_tasks()
+		created = tasks[0].complete()
+		if (created):
+			tasks[0].save()
+			TaskScheduler.distribute_tasks()
+
 		return created
 
 	@staticmethod
@@ -87,8 +95,8 @@ class TaskScheduler:
 								  Portion=1)
 				subtask.save()
 				subtasks.append(subtask)
-				tasks[0].Stage = TaskStage.Distributing
-				# task[0].save()
+				tasks[0].Stage = TaskStage.Rendering
+				tasks[0].save()
 
 		WorkerManager.distribute_subtasks(subtasks)
 

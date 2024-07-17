@@ -134,7 +134,7 @@ class RenderTask(models.Model):
 
     def progress_detailed(self) -> List[Tuple[float, float]]:  # array of (portion, progress)
         report = []
-        if (TaskStage(self.Stage) == TaskStage.Rendering):
+        if (TaskStage(self.Stage) == TaskStage.Rendering):  # only distributed stage
             subtasks = self.Subtask_set.all()
             for subtask in subtasks:
                 report.append((subtask.Portion, subtask.progress()))
@@ -160,9 +160,7 @@ class RenderTask(models.Model):
             print("ERROR: Failed to create new folder for new task")
             return None
 
-        instance = cls(TaskID_Int=taskID_int, TaskID=taskID, FileServerAddress=fileServerAddress, FileServerPort=fileServerPort, DataType=dataType, Stage=TaskStage.Uploading, CreatedBy=user)
-        instance.save()
-        return instance
+        return cls(TaskID_Int=taskID_int, TaskID=taskID, FileServerAddress=fileServerAddress, FileServerPort=fileServerPort, DataType=dataType, Stage=TaskStage.Pending, CreatedBy=user)
 
     def complete(self) -> bool:
         scene = BlendFile.get_current_scene(self.get_blender_data_path())
@@ -175,8 +173,6 @@ class RenderTask(models.Model):
         self.Stage      = TaskStage.Pending
 
         self.OutputType = RenderOutputType.from_scene(scene)
-
-        self.save()
 
         return True
 
@@ -215,9 +211,18 @@ class Subtask(models.Model):
         }
 
     def progress(self) -> float:
-        totalFrames = (self.EndFrame - self.StartFrame) / self.Task.FrameStep + 1
-        framesDone = (self.LastestFrame - self.StartFrame) / self.Task.FrameStep + 1
-        return framesDone / totalFrames
+        stage = SubtaskStage(self.Stage)
+        if (stage == SubtaskStage.Pending):
+            return 0.0
+        if (stage == SubtaskStage.Transferring):
+            return 0.1
+        if (stage == SubtaskStage.Running):
+            totalFrames = (self.EndFrame - self.StartFrame) / self.Task.FrameStep + 1
+            framesDone = (self.LastestFrame - self.StartFrame) / self.Task.FrameStep + 1
+            return max(0.1 + (framesDone / totalFrames) * 0.9, 1.0)
+        if (stage.as_number() >= SubtaskStage.Finished.as_number()):
+            return 1.0
+        # TODO: different return for Aborted
 
     def progress_weighted(self) -> float:
         return self.progress() * self.Portion
