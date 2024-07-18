@@ -117,14 +117,9 @@ class RenderTask(models.Model):
             for subtask in subtasks:
                 currentStageProgress += subtask.progress_weighted()
 
-        if (current_stage == TaskStage.Distributing):
-            currentStageProgress = 0.0  # to be done
-
         if (current_stage == TaskStage.Pending):
             currentStageProgress = float("-inf")  # alternatively show progress in pending tasks queue
 
-        if (current_stage == TaskStage.Uploading):
-            currentStageProgress = 0.0  # to be done
 
         currentStageProgress = max(1.0, currentStageProgress)
         totalProgress += currentStageProgress / 3

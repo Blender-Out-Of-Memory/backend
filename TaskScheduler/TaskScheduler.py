@@ -90,9 +90,19 @@ class TaskScheduler:
 		if (resourcesLeft):
 			tasks = RenderTask.objects.filter(Stage=TaskStage.Pending)
 			if (tasks.exists()):
-				subtask = Subtask(SubtaskIndex=0, Task=tasks[0], Worker=workers[0],
+				if len(list(workers))== 1:
+					subtask = Subtask(SubtaskIndex=0, Task=tasks[0], Worker=workers[0],
 								  StartFrame=tasks[0].StartFrame, EndFrame=tasks[0].EndFrame,
 								  Portion=1)
+				else:
+					frames = tasks[0].get_all_frames()
+
+					subtask1 = Subtask(SubtaskIndex=0, Task=tasks[0], Worker=workers[0],
+									   StartFrame=tasks[0].StartFrame, EndFrame=frames[len(frames)/2],
+									   Portion=0.5)
+					subtask2 = Subtask(SubtaskIndex=1, Task=tasks[0], Worker=workers[1],
+									   StartFrame=frames[len(frames)/2+1], EndFrame=tasks[0].EndFrame,
+									   Portion=0.5)
 				subtask.save()
 				subtasks.append(subtask)
 				tasks[0].Stage = TaskStage.Rendering

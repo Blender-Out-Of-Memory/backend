@@ -27,4 +27,18 @@ with open(filepath, "rb") as file:
                        body=file.read())
     response = connection.getresponse()
     print(response.status)
-    print(response.read())
+    rd = response.read()
+    print(rd)
+    taskid = json.loads(rd)["Task-ID"]
+    print(taskid)
+
+running = True
+while running:
+    connection = http.client.HTTPConnection(address, port)
+    connection.request("POST", "/api/taskscheduler/render-tasks/job-progres/",
+                       headers={"Task-ID": "",
+                                "Authorization": f"Token {token}"},
+                       body=file.read())
+    response = connection.getresponse()
+
+
