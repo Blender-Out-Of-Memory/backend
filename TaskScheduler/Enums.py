@@ -41,7 +41,7 @@ class RenderOutputType(models.TextChoices):
 
 	def get_extension(self):
 		# get index of second dot if exists
-		additionalIndex = self.value.find(".", 1)
+		additionalIndex = self.value[0].find(".", 1)
 		end = additionalIndex if (additionalIndex != -1) else len(self.value)
 		# chars after additionalIndex don't belong to extension
 		return self.value[0:end]
