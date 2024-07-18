@@ -75,7 +75,8 @@ class WorkerManager:
 			if (WorkerManager.idCounter <= workerID_int):
 				WorkerManager.idCounter = workerID_int
 
-		host = request.headers["Host"]
+		#host = request.headers["Host"]
+		host = request.META["REMOTE_ADDR"]
 		# TODO: check request.headers["Host"] is valid
 
 		try:
